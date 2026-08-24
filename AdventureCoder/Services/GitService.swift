@@ -295,7 +295,7 @@ public final class GitService {
 
     private func readContent(project: Project, hash: String) -> String? {
         let path = gitDir(project: project).appendingPathComponent("objects", isDirectory: true).appendingPathComponent(hash)
-        return try? String(contentsOfFile: path, encoding: .utf8)
+        return try? String(contentsOf: path, encoding: .utf8)
     }
 
     private func writeCommit(project: Project, commit: GitCommit, hash: String, treeHashes: [String]) {
@@ -316,7 +316,7 @@ public final class GitService {
         try? treeContent.write(to: treePath.appendingPathComponent(hash), atomically: true, encoding: .utf8)
         // Update snapshot
         let snapshot = treeHashes.map { line -> SnapshotEntry in
-            let parts = line.split(separator: "\t", maxCount: 2).map { String($0) }
+            let parts = line.split(separator: "\t", maxSplits: 1).map { String($0) }
             return SnapshotEntry(path: parts.count > 1 ? parts[1] : "", hash: parts[0])
         }
         if let data = try? JSONEncoder().encode(snapshot) {
@@ -379,7 +379,7 @@ public enum DiffAlgorithm {
         let hunks = computeHunks(oldLines: oldLines, newLines: newLines)
         var output = "diff --git a/\(path) b/\(path)\n"
         for hunk in hunks {
-            output += "@@ -\(hunk.oldStart),\(hunk.oldCount) +\(hunk.newStart),\(hunk.newCount) @@\n"
+            output += "@@ -\(hunk.oldStartLine),\(hunk.oldLineCount) +\(hunk.newStartLine),\(hunk.newLineCount) @@\n"
             for line in hunk.lines {
                 output += line.kind.prefix + line.content + "\n"
             }

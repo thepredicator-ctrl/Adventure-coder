@@ -50,7 +50,7 @@ public struct FileExplorerView: View {
                     .clipShape(RoundedRectangle(cornerRadius: MonoSpace.cornerRadius))
                     .padding(.horizontal, MonoSpace.md)
                 }
-                OutlineGroup(nodes, id: \.relativePath, children: \.children) { node in
+                OutlineGroup(nodes, id: \.relativePath, children: \.optionalChildren) { node in
                     fileRow(node, project: project)
                 }
                 .padding(.horizontal, MonoSpace.xs)

@@ -179,7 +179,7 @@ public final class HuggingFaceProvider: AIProvider {
 
     private func extractContext(from configs: [String: HFModelConfig?]?) -> Int {
         guard let configs = configs, let firstKey = configs.keys.first, let cfg = configs[firstKey] ?? nil else { return 4096 }
-        return cfg.maxPositionEmbeddings ?? cfg.seq_length ?? 4096
+        return cfg.max_position_embeddings ?? cfg.seq_length ?? 4096
     }
 }
 

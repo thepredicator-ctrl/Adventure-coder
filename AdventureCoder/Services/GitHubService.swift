@@ -52,7 +52,7 @@ public final class GitHubService {
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw ProviderError.requestFailed(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+            throw ProviderError.requestFailed((response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
         }
         let decoded = try JSONDecoder().decode([GitHubRepoJSON].self, from: data)
         return decoded.map { r in
@@ -82,7 +82,7 @@ public final class GitHubService {
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw ProviderError.requestFailed(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+            throw ProviderError.requestFailed((response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
         }
         let decoded = try JSONDecoder().decode(GitHubActionsRunsResponse.self, from: data)
         return decoded.workflowRuns.map { run in
@@ -232,7 +232,7 @@ public final class GitHubService {
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw ProviderError.requestFailed(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+            throw ProviderError.requestFailed((response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
         }
         let r = try JSONDecoder().decode(GitHubRepoJSON.self, from: data)
         return GitHubRepository(

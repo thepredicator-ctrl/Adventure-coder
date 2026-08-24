@@ -33,6 +33,12 @@ public struct FileNode: Identifiable, Hashable, Codable {
         (name as NSString).pathExtension.lowercased()
     }
 
+    /// Returns `children` if this is a directory, otherwise `nil`.
+    /// Required by SwiftUI's `OutlineGroup` which expects an optional children keypath.
+    public var optionalChildren: [FileNode]? {
+        isDirectory ? children : nil
+    }
+
     public var language: Language {
         Language.forExtension(fileExtension)
     }
