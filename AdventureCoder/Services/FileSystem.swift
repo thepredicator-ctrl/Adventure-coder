@@ -3,9 +3,12 @@ import Foundation
 /// Wraps FileManager operations on the in-sandbox project directory.
 public final class FileSystem {
     public static let shared = FileSystem()
-    private let fm = FileManager.default
 
-    public init(fm: FileManager = .default) { self.fm = fm }
+    private let fm: FileManager
+
+    public init(fm: FileManager = .default) {
+        self.fm = fm
+    }
 
     // MARK: - Listing
 

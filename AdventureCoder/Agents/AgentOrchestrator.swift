@@ -15,12 +15,16 @@ public final class AgentOrchestrator: ObservableObject {
     // MARK: - Public entry point
 
     /// Run a user request end-to-end: plan → execute → review → return summary.
+    /// Returns the updated conversation (passed by value because async work can't
+    /// safely mutate an `inout` parameter).
+    @discardableResult
     public func runRequest(
         _ userMessage: String,
         project: Project,
-        conversation: inout Conversation
-    ) async {
-        guard !isRunning else { return }
+        conversation: Conversation
+    ) async -> Conversation {
+        var conversation = conversation
+        guard !isRunning else { return conversation }
         isRunning = true
         defer { isRunning = false }
 
@@ -138,33 +142,41 @@ public final class AgentOrchestrator: ObservableObject {
             }
             finish(activity: userActivity, status: .completed, summary: "Done")
         }
+        return conversation
     }
 
     /// Stream a simple chat response without orchestration. Used when the user just asks a question.
+    /// Returns the updated conversation (the input conversation is not mutated in place because
+    /// streaming requires escaping closures that can't capture an `inout` parameter).
+    @discardableResult
     public func streamSimpleChat(
         _ userMessage: String,
         project: Project,
-        conversation: inout Conversation,
+        conversation: Conversation,
         onDelta: @escaping (String) -> Void
-    ) async {
+    ) async -> Conversation {
+        var working = conversation
         guard let resolution = ModelRouter.shared.resolve(preference: ModelRouter.shared.route(forTaskDescription: userMessage)) else {
-            appendAssistantMessage(to: &conversation, content: "I couldn't find a configured AI model. Add an OpenRouter or Hugging Face API key in Settings to get started.", project: project)
-            return
+            working.messages.append(ChatMessage(role: .assistant, content: "I couldn't find a configured AI model. Add an OpenRouter or Hugging Face API key in Settings to get started."))
+            ProjectStore.shared.update(working)
+            return working
         }
         var messages: [ProviderMessage] = []
         messages.append(ProviderMessage(role: "system", content: "You are Adventure Coder, a minimalist AI coding assistant. Answer concisely and helpfully."))
         let cm = ContextManager(project: project)
-        let recent = cm.recentConversationPrefix(conversation.messages, maxTokens: 2000)
+        let recent = cm.recentConversationPrefix(working.messages, maxTokens: 2000)
         for m in recent {
             messages.append(ProviderMessage(role: m.role.rawValue, content: m.content))
         }
         messages.append(ProviderMessage(role: "user", content: userMessage))
 
         var assistantMessage = ChatMessage(role: .assistant, content: "", modelId: resolution.model.modelId, providerId: resolution.model.providerId, streaming: true)
-        conversation.messages.append(assistantMessage)
-        ProjectStore.shared.update(conversation)
-        let assistantIdx = conversation.messages.count - 1
+        working.messages.append(assistantMessage)
+        ProjectStore.shared.update(working)
+        let assistantIdx = working.messages.count - 1
 
+        // Capture a mutable box so the escaping onDelta closure can update it.
+        let conversationBox = ConversationBox(working)
         do {
             let completion = try await resolution.provider.streamChat(
                 messages: messages,
@@ -174,27 +186,27 @@ public final class AgentOrchestrator: ObservableObject {
                 onDelta: { delta in
                     assistantMessage.content += delta
                     onDelta(delta)
-                    // Update the conversation in place
-                    DispatchQueue.main.async {
-                        conversation.messages[assistantIdx] = assistantMessage
-                    }
+                    conversationBox.value.messages[assistantIdx] = assistantMessage
                 }
             )
             assistantMessage.streaming = false
             assistantMessage.content = completion.content
-            conversation.messages[assistantIdx] = assistantMessage
-            ProjectStore.shared.update(conversation)
+            conversationBox.value.messages[assistantIdx] = assistantMessage
+            ProjectStore.shared.update(conversationBox.value)
+            return conversationBox.value
         } catch {
             assistantMessage.streaming = false
             assistantMessage.content = "Error: \(error.localizedDescription)"
-            conversation.messages[assistantIdx] = assistantMessage
-            ProjectStore.shared.update(conversation)
+            conversationBox.value.messages[assistantIdx] = assistantMessage
+            ProjectStore.shared.update(conversationBox.value)
+            return conversationBox.value
         }
     }
 
     // MARK: - Auto repair
 
     private func attemptAutoRepair(errorLog: String, project: Project, conversation: inout Conversation) async -> Bool {
+        // conversation is inout because runRequest now has a local var; this stays synchronous enough.
         let agent = AgentRegistry.shared.find("debugging.build_error")!
         let context = await ContextManager(project: project).buildContext(
             agent: agent,
@@ -355,4 +367,12 @@ public enum EditExtractor {
         }
         return edits
     }
+}
+
+/// Mutable reference-type box for `Conversation`, used so escaping closures
+/// (such as the streaming `onDelta` callback) can update the conversation
+/// without capturing an `inout` parameter.
+final class ConversationBox {
+    var value: Conversation
+    init(_ value: Conversation) { self.value = value }
 }

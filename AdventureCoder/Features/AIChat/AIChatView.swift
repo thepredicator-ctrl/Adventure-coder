@@ -68,12 +68,13 @@ public struct AIChatView: View {
         Task {
             var mutableConv = conv
             mutableConv.messages.append(userMsg)
+            let updated: Conversation
             if looksLikeBuild(request) {
-                await orchestrator.runRequest(request, project: workspace.currentProject!, conversation: &mutableConv)
+                updated = await orchestrator.runRequest(request, project: workspace.currentProject!, conversation: mutableConv)
             } else {
-                await orchestrator.streamSimpleChat(request, project: workspace.currentProject!, conversation: &mutableConv) { _ in }
+                updated = await orchestrator.streamSimpleChat(request, project: workspace.currentProject!, conversation: mutableConv) { _ in }
             }
-            workspace.currentConversation = mutableConv
+            workspace.currentConversation = updated
         }
     }
 
