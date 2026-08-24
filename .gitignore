@@ -1,0 +1,72 @@
+# Build artifacts
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+xcuserdata/
+*.xcworkspace/contents.xcworkspacedata
+*.swp
+*.swo
+*~
+.DS_Store
+
+# XcodeGen output
+AdventureCoder.xcodeproj
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# SPM
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Bundler
+.bundle/
+vendor/bundle/
+
+# Generated
+*.ipa
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Misc
+*.hmap
+*.ipa
+*.app.dSYM.zip
+*.app.dSYM
+
+# Vim/Emacs
+*.swp
+*~
+\#*\#
+.\#*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Thumbnails
+._*
