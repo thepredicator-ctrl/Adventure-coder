@@ -45,7 +45,7 @@ public final class AgentOrchestrator: ObservableObject {
             guard let resolution = ModelRouter.shared.resolve(preference: preference) else {
                 appendAssistantMessage(to: &conversation, content: "I couldn't find a configured AI model. Add an OpenRouter or Hugging Face API key in Settings to get started.", project: project)
                 finish(activity: userActivity, status: .failed, summary: "No model configured")
-                return
+                return conversation
             }
 
             // Step 2: planning pass — use the planner agent
@@ -67,7 +67,7 @@ public final class AgentOrchestrator: ObservableObject {
             } catch {
                 appendAssistantMessage(to: &conversation, content: "Planning failed: \(error.localizedDescription)", project: project)
                 finish(activity: userActivity, status: .failed, summary: "Planning failed")
-                return
+                return conversation
             }
 
             // Step 3: pick a coding agent based on project's primary language
@@ -102,7 +102,7 @@ public final class AgentOrchestrator: ObservableObject {
                 finish(activity: codingActivity, status: .failed, summary: "Coding failed: \(error.localizedDescription)")
                 appendAssistantMessage(to: &conversation, content: "Coding agent failed: \(error.localizedDescription)", project: project)
                 finish(activity: userActivity, status: .failed, summary: "Coding failed")
-                return
+                return conversation
             }
 
             // Step 5: extract file edits from the coding agent's response and apply them
@@ -130,7 +130,7 @@ public final class AgentOrchestrator: ObservableObject {
                 finish(activity: buildActivity, status: .failed, summary: "Build failed")
                 // Step 7: auto-repair if enabled
                 if SettingsStore.shared.autoRepairBuilds {
-                    let repaired = await attemptAutoRepair(errorLog: err, project: project, conversation: &conversation)
+                    let repaired = await attemptAutoRepair(errorLog: err, project: project)
                     if repaired {
                         appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build repaired successfully.", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
                     } else {
@@ -205,8 +205,8 @@ public final class AgentOrchestrator: ObservableObject {
 
     // MARK: - Auto repair
 
-    private func attemptAutoRepair(errorLog: String, project: Project, conversation: inout Conversation) async -> Bool {
-        // conversation is inout because runRequest now has a local var; this stays synchronous enough.
+    private func attemptAutoRepair(errorLog: String, project: Project) async -> Bool {
+        // Apply build-error agent's fixes; doesn't need the conversation reference.
         let agent = AgentRegistry.shared.find("debugging.build_error")!
         let context = await ContextManager(project: project).buildContext(
             agent: agent,
