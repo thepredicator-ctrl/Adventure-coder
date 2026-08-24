@@ -19,6 +19,7 @@ public final class ProviderRegistry: ObservableObject {
     }
 
     /// Convenience: returns the provider for the given model id by checking which provider owns it.
+    @MainActor
     public func provider(forModel modelId: String) -> AIProvider? {
         // OpenRouter models are typically vendor namespaced (e.g. "deepseek/deepseek-chat"),
         // Hugging Face models are organisation/namepsace (e.g. "meta-llama/Llama-3.1-8B-Instruct").

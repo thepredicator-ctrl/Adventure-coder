@@ -97,7 +97,7 @@ public enum UnderstandingAgents {
         toolPermissions: tools,
         inputSchema: ["files", "logs"],
         outputSchema: ["bugs[]"],
-        contextRequirements: ContextRequirements(maxFiles: 4, maxTokens: 5000, includeRelevantSnippets: true, includeErrorLogs: true),
+        contextRequirements: ContextRequirements(maxFiles: 4, maxTokens: 5000, includeErrorLogs: true, includeRelevantSnippets: true),
         handoffRules: ["Hand off to Debugging Planner for fix sequencing."],
         defaultModelPreference: .reviewFree,
         icon: MonoIcon.error,

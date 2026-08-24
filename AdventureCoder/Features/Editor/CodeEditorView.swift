@@ -196,7 +196,7 @@ struct CodeEditorRepresentable: UIViewRepresentable {
 /// lightweight syntax highlighting via NSAttributedString.
 final class CodeTextView: UITextView {
     var lineNumbersVisible: Bool = true {
-        didSet { setNeedsDisplay(setNeedsLayout()); setNeedsLayout() }
+        didSet { setNeedsLayout(); setNeedsDisplay() }
     }
     var tabSize: Int = 4 {
         didSet { applyHighlight() }
@@ -215,7 +215,7 @@ final class CodeTextView: UITextView {
     private var lineNumberLayer = CALayer()
     private var lineNumberTextLayer = CATextLayer()
 
-    override init(frame: CGRect, textContainer: UITextContainer?) {
+    override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
         setup()
     }
@@ -242,7 +242,7 @@ final class CodeTextView: UITextView {
         lineNumberTextLayer.frame = CGRect(x: 0, y: 8, width: gutterWidth - 8, height: bounds.height)
         lineNumberTextLayer.fontSize = 10
         lineNumberTextLayer.foregroundColor = UIColor.tertiaryLabel.cgColor
-        lineNumberTextLayer.alignment = .right
+        lineNumberTextLayer.alignmentMode = .right
         lineNumberTextLayer.contentsScale = UIScreen.main.scale
         lineNumberLayer.addSublayer(lineNumberTextLayer)
     }
@@ -273,22 +273,14 @@ final class CodeTextView: UITextView {
             lineNumberTextLayer.string = ""
             return
         }
-        let lineCount = (text as NSString).numberOfComponents(separatedBy: "\n")
+        let lineCount = (text as NSString).components(separatedBy: "\n").count
         let numbers = (1...lineCount).map { String($0) }.joined(separator: "\n")
         lineNumberTextLayer.string = numbers
         let verticalOffset = -contentOffset.y + 8
         lineNumberTextLayer.frame = CGRect(x: 0, y: verticalOffset, width: gutterWidth - 8, height: bounds.height)
     }
-
-    override func observedScrollViewDidScroll(_ scrollView: UIScrollView) {
-        // No-op: we observe our own scroll via layoutSubviews
-    }
 }
 
 extension CodeTextView {
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "contentOffset" {
-            updateLineNumbers()
-        }
-    }
+    // Observe our own scroll via layoutSubviews; no override needed.
 }

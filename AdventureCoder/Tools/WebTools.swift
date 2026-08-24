@@ -138,8 +138,8 @@ public final class WebSearchService {
         // DuckDuckGo's HTML endpoint lists results in <a class="result__a" href="...">title</a>
         // and snippets in <a class="result__snippet" ...>snippet</a>
         var hits: [Hit] = []
-        let resultPattern = try? NSRegularExpression(pattern: #"class="result__a"\s+href="([^"]+)"[^>]*>(.*?)</a>"#, options: [.caseInsensitive, .dotall])
-        let snippetPattern = try? NSRegularExpression(pattern: #"class="result__snippet"[^>]*>(.*?)</a>"#, options: [.caseInsensitive, .dotall])
+        let resultPattern = try? NSRegularExpression(pattern: #"class="result__a"\s+href="([^"]+)"[^>]*>(.*?)</a>"#, options: [.caseInsensitive])
+        let snippetPattern = try? NSRegularExpression(pattern: #"class="result__snippet"[^>]*>(.*?)</a>"#, options: [.caseInsensitive])
         let ns = html as NSString
         let snippetMatches = snippetPattern?.matches(in: html, options: [], range: NSRange(location: 0, length: ns.length)) ?? []
         if let resultPattern {

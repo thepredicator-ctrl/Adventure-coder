@@ -95,13 +95,15 @@ public struct StatusPill: View {
 }
 
 /// A minimal section header used to label groups in sidebars and panels.
-public struct SectionHeader: View {
+public struct SectionHeader<Accessory: View>: View {
     let title: String
-    var accessory: AnyView? = nil
-    public init(_ title: String, accessory: AnyView? = nil) {
+    let accessory: () -> Accessory
+
+    public init(_ title: String, @ViewBuilder accessory: @escaping () -> Accessory) {
         self.title = title
         self.accessory = accessory
     }
+
     public var body: some View {
         HStack {
             Text(title.uppercased())
@@ -109,10 +111,16 @@ public struct SectionHeader: View {
                 .tracking(0.8)
                 .foregroundColor(MonoColor.tertiaryText)
             Spacer()
-            if let accessory = accessory { accessory }
+            accessory()
         }
         .padding(.horizontal, MonoSpace.md)
         .padding(.vertical, MonoSpace.sm)
+    }
+}
+
+public extension SectionHeader where Accessory == EmptyView {
+    init(_ title: String) {
+        self.init(title) { EmptyView() }
     }
 }
 

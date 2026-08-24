@@ -267,3 +267,10 @@ public enum ToolCatalog {
         all.first { $0.name == name }
     }
 }
+
+public extension ToolDefinition {
+    /// Convenience lookup so individual Tool structs can write `definition = .find("read_file") ?? fallback`.
+    static func find(_ name: String) -> ToolDefinition? {
+        ToolCatalog.find(name)
+    }
+}

@@ -1,5 +1,6 @@
 import UIKit
 import Foundation
+import SwiftUI
 
 /// Lightweight syntax highlighter that operates on NSMutableAttributedString.
 /// It applies monochrome-leaning colors (keyword, type, string, comment, number)
@@ -17,7 +18,7 @@ public enum SyntaxHighlighter {
         case .python, .ruby, .shell:
             commentPattern = "#.*$"
         case .sql:
-            commentPattern = "--.*$|/\*[\s\S]*?\*/"
+            commentPattern = #"--.*$|/\*[\s\S]*?\*/"#
         default:
             commentPattern = ""
         }
