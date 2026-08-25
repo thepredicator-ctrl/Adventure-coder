@@ -136,7 +136,7 @@ public struct ShortcutKeysView: View {
 public final class CommandSystem: ObservableObject {
     public static let shared = CommandSystem()
 
-    public struct Command: Identifiable, Hashable {
+    public struct Command: Identifiable {
         public let id: String
         public let title: String
         public let category: String
@@ -153,30 +153,30 @@ public final class CommandSystem: ObservableObject {
 
     private func registerDefaultCommands() {
         commands = [
-            Command(id: "new_file", title: "New File", category: "File", icon: MonoIcon.docPlus, shortcut: .newFile) {
+            Command(id: "new_file", title: "New File", category: "File", icon: MonoIcon.docPlus, shortcut: KeyboardShortcuts.newFile) {
                 WorkspaceState.shared.bottomPanel = .newProject
             },
-            Command(id: "save", title: "Save File", category: "File", icon: "arrow.down.to.line", shortcut: .saveFile) {},
-            Command(id: "find", title: "Find", category: "Edit", icon: MonoIcon.search, shortcut: .find) {},
-            Command(id: "command_palette", title: "Command Palette", category: "Navigation", icon: MonoIcon.command, shortcut: .commandPalette) {
+            Command(id: "save", title: "Save File", category: "File", icon: "arrow.down.to.line", shortcut: KeyboardShortcuts.saveFile) {},
+            Command(id: "find", title: "Find", category: "Edit", icon: MonoIcon.search, shortcut: KeyboardShortcuts.find) {},
+            Command(id: "command_palette", title: "Command Palette", category: "Navigation", icon: MonoIcon.command, shortcut: KeyboardShortcuts.commandPalette) {
                 WorkspaceState.shared.showCommandPalette = true
             },
-            Command(id: "global_search", title: "Global Search", category: "Navigation", icon: MonoIcon.search, shortcut: .globalSearch) {
+            Command(id: "global_search", title: "Global Search", category: "Navigation", icon: MonoIcon.search, shortcut: KeyboardShortcuts.globalSearch) {
                 WorkspaceState.shared.showGlobalSearch = true
             },
-            Command(id: "toggle_sidebar", title: "Toggle Sidebar", category: "View", icon: MonoIcon.sidebar, shortcut: .toggleSidebar) {
+            Command(id: "toggle_sidebar", title: "Toggle Sidebar", category: "View", icon: MonoIcon.sidebar, shortcut: KeyboardShortcuts.toggleSidebar) {
                 WorkspaceState.shared.sidebarCollapsed.toggle()
             },
-            Command(id: "toggle_terminal", title: "Toggle Terminal", category: "View", icon: MonoIcon.terminal, shortcut: .toggleTerminal) {
+            Command(id: "toggle_terminal", title: "Toggle Terminal", category: "View", icon: MonoIcon.terminal, shortcut: KeyboardShortcuts.toggleTerminal) {
                 WorkspaceState.shared.terminalCollapsed.toggle()
             },
-            Command(id: "toggle_ai_chat", title: "Toggle AI Chat", category: "View", icon: MonoIcon.sparkles, shortcut: .toggleAIChat) {
+            Command(id: "toggle_ai_chat", title: "Toggle AI Chat", category: "View", icon: MonoIcon.sparkles, shortcut: KeyboardShortcuts.toggleAIChat) {
                 WorkspaceState.shared.chatCollapsed.toggle()
             },
-            Command(id: "build", title: "Build Project", category: "Build", icon: MonoIcon.build, shortcut: .build) {
+            Command(id: "build", title: "Build Project", category: "Build", icon: MonoIcon.build, shortcut: KeyboardShortcuts.build) {
                 WorkspaceState.shared.bottomPanel = .builds
             },
-            Command(id: "settings", title: "Settings", category: "Settings", icon: MonoIcon.settings, shortcut: .settings) {
+            Command(id: "settings", title: "Settings", category: "Settings", icon: MonoIcon.settings, shortcut: KeyboardShortcuts.settings) {
                 WorkspaceState.shared.bottomPanel = .settings
             },
         ]

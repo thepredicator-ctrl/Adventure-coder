@@ -23,9 +23,9 @@ public final class CommandManager: ObservableObject {
         public let icon: String
         public let shortcut: KeyboardShortcuts.Shortcut?
         public let isEnabled: Bool
-        public let action: () -> Void
+        public let action: @MainActor () -> Void
 
-        public init(id: String, title: String, category: CommandCategory, icon: String, shortcut: KeyboardShortcuts.Shortcut? = nil, isEnabled: Bool = true, action: @escaping () -> Void) {
+        public init(id: String, title: String, category: CommandCategory, icon: String, shortcut: KeyboardShortcuts.Shortcut? = nil, isEnabled: Bool = true, action: @escaping @MainActor () -> Void) {
             self.id = id
             self.title = title
             self.category = category
@@ -240,7 +240,7 @@ public final class CommandManager: ObservableObject {
     // MARK: - Execution
 
     public func execute(_ command: UserCommand) {
-        command.action()
+        Task { @MainActor in command.action() }
         // Track recent
         recentCommands.removeAll { $0.id == command.id }
         recentCommands.insert(command, at: 0)

@@ -78,7 +78,7 @@ struct OutlineInspector: View {
                 SectionHeader("Outline — \(file.name)")
                 ForEach(symbols) { symbol in
                     HStack(spacing: MonoSpace.xs) {
-                        Image(systemName: symbol.icon)
+                        Image(systemName: symbol.kind.icon)
                             .font(.system(size: 10))
                             .foregroundColor(symbolColor(symbol.kind))
                         Text(symbol.name)
