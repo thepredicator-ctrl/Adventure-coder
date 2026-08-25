@@ -62,7 +62,7 @@ public final class CommandManager: ObservableObject {
         allCommands = [
             // File
             UserCommand(id: "file.new", title: "New File", category: .file, icon: "doc.badge.plus", shortcut: KeyboardShortcuts.newFile) {
-                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = } .newProject
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .newProject }
             },
             UserCommand(id: "file.open", title: "Open File…", category: .file, icon: "folder", shortcut: KeyboardShortcuts.openFile) {},
             UserCommand(id: "file.save", title: "Save", category: .file, icon: "arrow.down.to.line", shortcut: KeyboardShortcuts.saveFile) {},
@@ -108,10 +108,10 @@ public final class CommandManager: ObservableObject {
 
             // Navigate
             UserCommand(id: "nav.commandPalette", title: "Command Palette", category: .navigate, icon: "command", shortcut: KeyboardShortcuts.commandPalette) {
-                DispatchQueue.main.async { WorkspaceState.shared.showCommandPalette = } true
+                DispatchQueue.main.async { WorkspaceState.shared.showCommandPalette = true }
             },
             UserCommand(id: "nav.globalSearch", title: "Global Search", category: .navigate, icon: "magnifyingglass", shortcut: KeyboardShortcuts.globalSearch) {
-                DispatchQueue.main.async { WorkspaceState.shared.showGlobalSearch = } true
+                DispatchQueue.main.async { WorkspaceState.shared.showGlobalSearch = true }
             },
             UserCommand(id: "nav.quickOpen", title: "Quick Open File", category: .navigate, icon: "doc.text.magnifyingglass", shortcut: KeyboardShortcuts.quickOpen) {},
             UserCommand(id: "nav.goToSymbol", title: "Go to Symbol…", category: .navigate, icon: "square.grid.2x2") {},
@@ -155,7 +155,7 @@ public final class CommandManager: ObservableObject {
 
             // AI
             UserCommand(id: "ai.ask", title: "Ask AI", category: .ai, icon: "sparkles", shortcut: KeyboardShortcuts.askAI) {
-                DispatchQueue.main.async { WorkspaceState.shared.chatCollapsed = } false
+                DispatchQueue.main.async { WorkspaceState.shared.chatCollapsed = false }
             },
             UserCommand(id: "ai.switchModel", title: "Switch Model…", category: .ai, icon: "cpu", shortcut: KeyboardShortcuts.switchModel) {},
             UserCommand(id: "ai.switchAgent", title: "Switch Agent…", category: .ai, icon: "person.crop.circle", shortcut: KeyboardShortcuts.switchAgent) {},
