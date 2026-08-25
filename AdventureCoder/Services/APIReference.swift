@@ -222,8 +222,8 @@ public enum APIReference {
         }
 
         // Commit
-        if case .success(let sha) = GitService.shared.commit(project: project, message: "initial commit") {
-            print("Committed: \(sha)")
+        if case .success(let commitSha) = GitService.shared.commit(project: project, message: "initial commit") {
+            print("Committed: \(commitSha)")
         }
 
         // History

@@ -16,7 +16,7 @@ public final class CommandManager: ObservableObject {
 
     private let defaults = UserDefaults.standard
 
-    public struct UserCommand: Identifiable, Hashable {
+    public struct UserCommand: Identifiable {
         public let id: String
         public let title: String
         public let category: CommandCategory

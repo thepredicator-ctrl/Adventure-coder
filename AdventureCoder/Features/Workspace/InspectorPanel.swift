@@ -116,12 +116,12 @@ struct OutlineInspector: View {
 
     private func symbolColor(_ kind: SymbolKind) -> Color {
         switch kind {
-        case .class: return .purple
+        case .klass: return .purple
         case .struct_: return .blue
         case .enum_: return .orange
         case .protocol_: return .green
-        case .func: return .red
-        case .var_: return .gray
+        case .function: return .red
+        case .variable: return .gray
         case .extension_: return .teal
         }
     }
@@ -258,16 +258,22 @@ struct MetricsInspector: View {
 // MARK: - Symbol parsing
 
 public enum SymbolKind: String {
-    case class, struct_, enum_, protocol_, func, var_, extension_
+    case klass = "class"
+    case struct_ = "struct"
+    case enum_ = "enum"
+    case protocol_ = "protocol"
+    case function = "func"
+    case variable = "var"
+    case extension_ = "extension"
 
     public var icon: String {
         switch self {
-        case .class: return "c.square"
+        case .klass: return "c.square"
         case .struct_: return "s.square"
         case .enum_: return "e.square"
         case .protocol_: return "p.square"
-        case .func: return "f.square"
-        case .var_: return "v.square"
+        case .function: return "f.square"
+        case .variable: return "v.square"
         case .extension_: return "plus.square"
         }
     }
@@ -291,7 +297,7 @@ public enum SymbolParser {
 
             // Detect class
             if let name = extractName(after: "class ", in: trimmed) {
-                symbols.append(SymbolInfo(name: name, kind: .class, line: idx + 1))
+                symbols.append(SymbolInfo(name: name, kind: .klass, line: idx + 1))
             }
             // Detect struct
             else if let name = extractName(after: "struct ", in: trimmed) {
@@ -307,7 +313,7 @@ public enum SymbolParser {
             }
             // Detect func
             else if let name = extractName(after: "func ", in: trimmed) {
-                symbols.append(SymbolInfo(name: name, kind: .func, line: idx + 1))
+                symbols.append(SymbolInfo(name: name, kind: .function, line: idx + 1))
             }
             // Detect extension
             else if let name = extractName(after: "extension ", in: trimmed) {
@@ -315,7 +321,7 @@ public enum SymbolParser {
             }
             // Detect var/let
             else if let name = extractVarName(in: trimmed) {
-                symbols.append(SymbolInfo(name: name, kind: .var_, line: idx + 1))
+                symbols.append(SymbolInfo(name: name, kind: .variable, line: idx + 1))
             }
         }
         return symbols
