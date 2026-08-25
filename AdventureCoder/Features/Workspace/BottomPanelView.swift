@@ -47,6 +47,9 @@ public struct BottomPanelView: View {
             case .builds: BuildsPanel()
             case .settings: SettingsPanel()
             case .newProject: NewProjectPanel()
+            case .remoteTerminal: RemoteTerminalPanel()
+            case .remotePreview: RemotePreviewPanel()
+            case .remoteDashboard: RemoteDashboardView()
             }
         }
         .background(MonoColor.canvas)

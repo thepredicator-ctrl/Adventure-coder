@@ -108,11 +108,27 @@ public final class AgentOrchestrator: ObservableObject {
             // Step 5: extract file edits from the coding agent's response and apply them
             let edits = EditExtractor.extract(from: codingCompletion.content, project: project)
             var appliedDiffs: [FileDiff] = []
-            for edit in edits {
-                let diff = applyEdit(edit, project: project, agent: codingAgent)
-                if let diff = diff {
-                    appliedDiffs.append(diff)
-                    pendingDiffs.append(diff)
+
+            // Check if we're in remote mode
+            let isRemoteMode = await MainActor.run(body: { RemotePCStore.shared.isConnected && WorkspaceState.shared.currentRemoteProject != nil })
+
+            if isRemoteMode {
+                // Apply edits to the remote PC
+                for edit in edits {
+                    let diff = await applyRemoteEdit(edit, agent: codingAgent)
+                    if let diff = diff {
+                        appliedDiffs.append(diff)
+                        pendingDiffs.append(diff)
+                    }
+                }
+            } else {
+                // Apply edits locally
+                for edit in edits {
+                    let diff = applyEdit(edit, project: project, agent: codingAgent)
+                    if let diff = diff {
+                        appliedDiffs.append(diff)
+                        pendingDiffs.append(diff)
+                    }
                 }
             }
             update(activity: codingActivity, filesAffected: edits.map { $0.path })
@@ -121,23 +137,61 @@ public final class AgentOrchestrator: ObservableObject {
             // Step 6: build & verify
             let buildActivity = AgentActivity(agentId: "tools.build", agentName: "Build Agent", status: .running, summary: "Building project", startedAt: Date())
             activities.append(buildActivity)
-            let buildOutcome = BuildService.shared.build(project: project, configuration: "debug")
-            switch buildOutcome {
-            case .success(let output):
+
+            let buildOutput: String
+            let buildSuccess: Bool
+            if isRemoteMode {
+                // Build on the remote PC
+                finish(activity: buildActivity, status: .running, summary: "Building on remote PC")
+                let remoteProject = await MainActor.run(body: { WorkspaceState.shared.currentRemoteProject })
+                if let remoteProject = remoteProject {
+                    let result = try? await SSHService.shared.execute("cd '\(remoteProject.path.replacingOccurrences(of: "'", with: "'\\''"))' && (npm run build 2>&1 || cargo build 2>&1 || echo 'No build system detected')", timeout: 300)
+                    buildOutput = result?.stdout ?? "Build completed"
+                    buildSuccess = result?.success ?? true
+
+                    // If build succeeded, try to install deps and start preview
+                    if buildSuccess {
+                        // Install dependencies first if needed
+                        let hasPackageJson = (try? await SSHService.shared.execute("test -f '\(remoteProject.path.replacingOccurrences(of: "'", with: "'\\''"))/package.json' && echo yes"))?.stdout.contains("yes") ?? false
+                        if hasPackageJson {
+                            _ = try? await SSHService.shared.execute("cd '\(remoteProject.path.replacingOccurrences(of: "'", with: "'\\''"))' && npm install 2>&1", timeout: 120)
+                        }
+                        // Start preview
+                        let template = await MainActor.run(body: { WorkspaceState.shared.currentRemoteProjectTemplate ?? .web })
+                        _ = await RemotePreviewService.shared.startPreview(projectPath: remoteProject.path, template: template)
+                    }
+                } else {
+                    buildOutput = "No remote project selected"
+                    buildSuccess = false
+                }
+            } else {
+                // Build locally
+                let buildOutcome = BuildService.shared.build(project: project, configuration: "debug")
+                switch buildOutcome {
+                case .success(let output):
+                    buildOutput = output
+                    buildSuccess = true
+                case .failure(let err):
+                    buildOutput = err
+                    buildSuccess = false
+                }
+            }
+
+            if buildSuccess {
                 finish(activity: buildActivity, status: .completed, summary: "Build OK")
-                appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: output, diffs: appliedDiffs), project: project, diffs: appliedDiffs)
-            case .failure(let err):
+                appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: buildOutput, diffs: appliedDiffs), project: project, diffs: appliedDiffs)
+            } else {
                 finish(activity: buildActivity, status: .failed, summary: "Build failed")
                 // Step 7: auto-repair if enabled
                 if SettingsStore.shared.autoRepairBuilds {
-                    let repaired = await attemptAutoRepair(errorLog: err, project: project)
+                    let repaired = await attemptAutoRepair(errorLog: buildOutput, project: project)
                     if repaired {
                         appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build repaired successfully.", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
                     } else {
-                        appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build failed and auto-repair could not fully resolve the issues:\n\n\(err)", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
+                        appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build failed and auto-repair could not fully resolve the issues:\n\n\(buildOutput)", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
                     }
                 } else {
-                    appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build failed:\n\n\(err)", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
+                    appendAssistantMessage(to: &conversation, content: composeSummary(plan: planCompletion.content, code: codingCompletion.content, build: "Build failed:\n\n\(buildOutput)", diffs: appliedDiffs), project: project, diffs: appliedDiffs)
                 }
             }
             finish(activity: userActivity, status: .completed, summary: "Done")
@@ -276,6 +330,33 @@ public final class AgentOrchestrator: ObservableObject {
             modifiedContent: modified
         )
         return diff
+    }
+
+    /// Apply an edit to a file on the remote PC via SSH.
+    private func applyRemoteEdit(_ edit: EditExtractor.Edit, agent: AgentDefinition) async -> FileDiff? {
+        let original = (try? await RemoteFileService.shared.readFile(edit.path)) ?? ""
+        let modified: String
+        if edit.kind == .create || original.isEmpty {
+            modified = edit.newContent
+        } else if let find = edit.findText, let replace = edit.replaceText {
+            modified = original.replacingOccurrences(of: find, with: replace)
+        } else {
+            modified = edit.newContent
+        }
+        do {
+            try await RemoteFileService.shared.writeFile(edit.path, content: modified)
+        } catch {
+            return nil
+        }
+        let hunks = DiffAlgorithm.computeHunks(oldLines: original.components(separatedBy: .newlines), newLines: modified.components(separatedBy: .newlines))
+        return FileDiff(
+            filePath: edit.path,
+            agentId: agent.agentId,
+            agentName: agent.name,
+            hunks: hunks,
+            originalContent: original,
+            modifiedContent: modified
+        )
     }
 
     private func appendAssistantMessage(to conversation: inout Conversation, content: String, project: Project, diffs: [FileDiff] = []) {

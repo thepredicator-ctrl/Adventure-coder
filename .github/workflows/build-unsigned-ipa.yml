@@ -37,7 +37,8 @@ jobs:
 
       - name: Resolve Swift package dependencies
         run: |
-          xcodebuild -resolvePackageDependencies -project AdventureCoder.xcodeproj -scheme AdventureCoder || true
+          xcodebuild -resolvePackageDependencies -project AdventureCoder.xcodeproj -scheme AdventureCoder
+        timeout-minutes: 10
 
       - name: Build (unsigned)
         run: |
@@ -52,6 +53,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
             build
+        timeout-minutes: 20
 
       - name: Locate built .app
         id: app

@@ -261,6 +261,150 @@ public enum ToolCatalog {
               parameters: [
                 .init(name: "device", type: "string", required: false, description: "Target device label.", defaultValue: "default")
               ]),
+        // Remote PC tools
+        .init(name: "remote_list_files", category: .file, summary: "List files on the remote PC",
+              description: "Lists files in a directory on the connected remote PC via SSH.",
+              parameters: [
+                .init(name: "path", type: "string", required: false, description: "Directory path. Defaults to workspace root.")
+              ]),
+        .init(name: "remote_read_file", category: .file, summary: "Read a file from the remote PC",
+              description: "Reads the contents of a file on the remote PC via SSH.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Absolute path to the file.")
+              ]),
+        .init(name: "remote_write_file", category: .file, summary: "Write a file on the remote PC",
+              description: "Creates or overwrites a file on the remote PC via SSH.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Absolute path to the file."),
+                .init(name: "content", type: "string", required: true, description: "File content.")
+              ],
+              isDestructive: true),
+        .init(name: "remote_edit_file", category: .file, summary: "Edit a file on the remote PC",
+              description: "Applies a find-and-replace edit to a file on the remote PC.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Absolute path."),
+                .init(name: "find", type: "string", required: true, description: "Text to find."),
+                .init(name: "replace", type: "string", required: true, description: "Replacement text.")
+              ],
+              isDestructive: true),
+        .init(name: "remote_delete_file", category: .file, summary: "Delete a file on the remote PC",
+              description: "Deletes a file or directory on the remote PC.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Absolute path.")
+              ],
+              isDestructive: true),
+        .init(name: "remote_create_directory", category: .file, summary: "Create a directory on the remote PC",
+              description: "Creates a directory (and parents) on the remote PC.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Absolute path.")
+              ]),
+        .init(name: "remote_move_file", category: .file, summary: "Move/rename a file on the remote PC",
+              description: "Moves or renames a file/directory on the remote PC.",
+              parameters: [
+                .init(name: "from", type: "string", required: true, description: "Source path."),
+                .init(name: "to", type: "string", required: true, description: "Destination path.")
+              ]),
+        .init(name: "remote_copy_file", category: .file, summary: "Copy a file on the remote PC",
+              description: "Copies a file/directory on the remote PC.",
+              parameters: [
+                .init(name: "from", type: "string", required: true, description: "Source path."),
+                .init(name: "to", type: "string", required: true, description: "Destination path.")
+              ]),
+        .init(name: "remote_search_files", category: .search, summary: "Search files on the remote PC",
+              description: "Searches for a text pattern in files on the remote PC.",
+              parameters: [
+                .init(name: "query", type: "string", required: true, description: "Search query."),
+                .init(name: "directory", type: "string", required: false, description: "Directory to search in.")
+              ]),
+        .init(name: "remote_execute_command", category: .terminal, summary: "Execute a command on the remote PC",
+              description: "Runs a shell command on the remote PC and returns stdout, stderr, and exit code.",
+              parameters: [
+                .init(name: "command", type: "string", required: true, description: "Command to execute.")
+              ],
+              requiresConfirmation: true),
+        .init(name: "remote_start_process", category: .terminal, summary: "Start a background process on the remote PC",
+              description: "Starts a long-running process on the remote PC and returns its PID.",
+              parameters: [
+                .init(name: "command", type: "string", required: true, description: "Command to start."),
+                .init(name: "cwd", type: "string", required: true, description: "Working directory.")
+              ]),
+        .init(name: "remote_stop_process", category: .terminal, summary: "Stop a process on the remote PC",
+              description: "Stops a running process by PID on the remote PC.",
+              parameters: [
+                .init(name: "pid", type: "int", required: true, description: "Process ID to stop.")
+              ],
+              requiresConfirmation: true),
+        .init(name: "remote_get_processes", category: .terminal, summary: "List running processes on the remote PC",
+              description: "Returns the top processes by CPU usage on the remote PC.",
+              parameters: []),
+        .init(name: "remote_get_environment", category: .analysis, summary: "Get remote PC environment info",
+              description: "Returns OS, shell, CPU, RAM, disk, and workspace information for the remote PC.",
+              parameters: []),
+        .init(name: "remote_install_dependency", category: .build, summary: "Install dependencies on the remote PC",
+              description: "Installs project dependencies (npm, cargo, pip) on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory."),
+                .init(name: "package", type: "string", required: false, description: "Specific package to install.")
+              ]),
+        .init(name: "remote_build_project", category: .build, summary: "Build the project on the remote PC",
+              description: "Runs the project's build command on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory.")
+              ]),
+        .init(name: "remote_run_tests", category: .test, summary: "Run tests on the remote PC",
+              description: "Runs the project's test suite on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory.")
+              ]),
+        .init(name: "remote_get_logs", category: .analysis, summary: "Get logs from the remote PC",
+              description: "Reads build or runtime logs from the remote PC.",
+              parameters: [
+                .init(name: "log_file", type: "string", required: false, description: "Log file path.", defaultValue: "/tmp/process.log")
+              ]),
+        .init(name: "remote_git_status", category: .git, summary: "Git status on the remote PC",
+              description: "Returns the git status of the project on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory.")
+              ]),
+        .init(name: "remote_git_diff", category: .git, summary: "Git diff on the remote PC",
+              description: "Returns the git diff of the project on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory."),
+                .init(name: "staged", type: "bool", required: false, description: "Show staged diff.", defaultValue: "false")
+              ]),
+        .init(name: "remote_git_commit", category: .git, summary: "Git commit on the remote PC",
+              description: "Commits all changes on the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory."),
+                .init(name: "message", type: "string", required: true, description: "Commit message.")
+              ],
+              requiresConfirmation: true),
+        .init(name: "remote_git_push", category: .git, summary: "Git push from the remote PC",
+              description: "Pushes commits from the remote PC to GitHub.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory.")
+              ],
+              requiresConfirmation: true),
+        .init(name: "remote_git_pull", category: .git, summary: "Git pull on the remote PC",
+              description: "Pulls changes from GitHub to the remote PC.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory.")
+              ],
+              requiresConfirmation: true),
+        .init(name: "remote_start_preview", category: .preview, summary: "Start a preview server on the remote PC",
+              description: "Starts the development server on the remote PC and detects the preview URL.",
+              parameters: [
+                .init(name: "cwd", type: "string", required: true, description: "Project directory."),
+                .init(name: "template", type: "string", required: false, description: "Project template.", defaultValue: "web")
+              ]),
+        .init(name: "remote_stop_preview", category: .preview, summary: "Stop the preview server on the remote PC",
+              description: "Stops the currently running preview server on the remote PC.",
+              parameters: []),
+        .init(name: "remote_download_project", category: .file, summary: "Download project source as ZIP",
+              description: "Downloads the complete project source from the remote PC as a ZIP file.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Remote project path.")
+              ]),
     ]
 
     public static func find(_ name: String) -> ToolDefinition? {

@@ -28,6 +28,9 @@ public struct SettingsView: View {
             Section("GitHub") {
                 NavigationLink("GitHub Account") { GitHubSettingsView() }
             }
+            Section("Remote PC") {
+                NavigationLink("Remote Machines") { RemoteSettingsView() }
+            }
             Section("Editor") {
                 NavigationLink("Editor") { EditorSettingsView() }
             }
