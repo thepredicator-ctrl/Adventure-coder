@@ -405,6 +405,56 @@ public enum ToolCatalog {
               parameters: [
                 .init(name: "path", type: "string", required: true, description: "Remote project path.")
               ]),
+        // Advanced analysis tools
+        .init(name: "analyze_complexity", category: .analysis, summary: "Analyze code complexity",
+              description: "Calculates cyclomatic complexity, cognitive complexity, and maintainability index.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to analyze.")
+              ]),
+        .init(name: "detect_duplicates", category: .analysis, summary: "Detect duplicate code",
+              description: "Finds duplicate code blocks using token-based similarity.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Directory to scan.")
+              ]),
+        .init(name: "detect_dead_code", category: .analysis, summary: "Detect dead code",
+              description: "Finds unused functions, imports, and unreachable code.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to analyze.")
+              ]),
+        .init(name: "calculate_metrics", category: .analysis, summary: "Calculate project metrics",
+              description: "Calculates LOC, function count, class count, and other metrics.",
+              parameters: []),
+        .init(name: "format_code", category: .file, summary: "Format code",
+              description: "Formats code according to language style guides.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to format.")
+              ]),
+        .init(name: "lint_code", category: .analysis, summary: "Lint code",
+              description: "Checks code for style violations and potential issues.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to lint.")
+              ]),
+        .init(name: "generate_tests", category: .test, summary: "Generate unit tests",
+              description: "Generates unit test stubs for functions in a file.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "Source file to generate tests for.")
+              ]),
+        .init(name: "security_scan", category: .analysis, summary: "Security scan",
+              description: "Scans a file for security issues including secrets and insecure patterns.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to scan.")
+              ]),
+        .init(name: "dependency_scan", category: .analysis, summary: "Scan dependencies",
+              description: "Lists all project dependencies from Package.swift, package.json, requirements.txt, or Cargo.toml.",
+              parameters: []),
+        .init(name: "generate_changelog", category: .file, summary: "Generate changelog",
+              description: "Generates a changelog from git commit history.",
+              parameters: []),
+        .init(name: "generate_docs", category: .file, summary: "Generate documentation",
+              description: "Adds inline documentation comments to functions and types.",
+              parameters: [
+                .init(name: "path", type: "string", required: true, description: "File to document.")
+              ]),
     ]
 
     public static func find(_ name: String) -> ToolDefinition? {

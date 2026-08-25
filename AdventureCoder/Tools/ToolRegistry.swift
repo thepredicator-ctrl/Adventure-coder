@@ -64,6 +64,18 @@ public final class ToolRegistry {
             RemoteStartPreviewTool(),
             RemoteStopPreviewTool(),
             RemoteDownloadProjectTool(),
+            // Advanced analysis tools
+            AnalyzeComplexityTool(),
+            DetectDuplicatesTool(),
+            DetectDeadCodeTool(),
+            CalculateMetricsTool(),
+            FormatCodeTool(),
+            LintCodeTool(),
+            GenerateTestsTool(),
+            SecurityScanTool(),
+            DependencyScanTool(),
+            GenerateChangelogTool(),
+            GenerateDocsTool(),
         ]
     }
 

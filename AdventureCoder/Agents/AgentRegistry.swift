@@ -5,7 +5,20 @@ public final class AgentRegistry {
     public static let shared = AgentRegistry()
     public let all: [AgentDefinition]
     private init() {
-        self.all = PlanningAgents.all + CodingAgents.all + UnderstandingAgents.all + DebuggingAgents.all + ResearchAgents.all + DevToolAgents.all + ProductAgents.all + DeploymentAgents.all
+        self.all = PlanningAgents.all
+            + CodingAgents.all
+            + UnderstandingAgents.all
+            + DebuggingAgents.all
+            + ResearchAgents.all
+            + DevToolAgents.all
+            + ProductAgents.all
+            + DeploymentAgents.all
+            + AdvancedCodingAgents.all
+            + AdvancedAnalysisAgents.all
+            + DevOpsDataAgents.all
+            + MLSpecialistAgents.all
+            + Web3Agents.all
+            + GameDevAgents.all
     }
     public func find(_ id: String) -> AgentDefinition? {
         all.first { $0.agentId == id }
