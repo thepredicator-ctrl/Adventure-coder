@@ -342,7 +342,7 @@ public final class SnippetManager: ObservableObject {
 // MARK: - Search Indexer
 
 /// Indexes project files for fast symbol and content search.
-public final class SearchIndexer {
+public final class SearchIndexer: ObservableObject {
     public static let shared = SearchIndexer()
     private init() {}
 
@@ -618,7 +618,7 @@ public final class CodeCompletionEngine {
         public var icon: String {
             switch self {
             case .keyword: return "k.square"
-            case .function: return "f.square"
+            case .functiontion: return "f.square"
             case .type: return "t.square"
             case .variable: return "v.square"
             case .snippet: return "s.square"
@@ -648,7 +648,7 @@ public final class CodeCompletionEngine {
         if let content = fileContent {
             let symbols = SymbolParser.parse(content: content, fileName: "")
             for symbol in symbols where symbol.name.hasPrefix(partial) {
-                let kind: CompletionKind = symbol.kind == .func ? .function : (symbol.kind == .var_ ? .variable : .type)
+                let kind: CompletionKind = symbol.kind == .function ? .functiontion : (symbol.kind == .variable ? .variable : .type)
                 results.append(Completion(text: symbol.name, kind: kind, detail: "Line \(symbol.line)"))
             }
         }

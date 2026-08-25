@@ -4,10 +4,11 @@ import SwiftUI
 /// Centralized keyboard shortcut management system.
 /// Defines all keyboard shortcuts used throughout the application.
 public struct KeyboardShortcuts {
-    public struct Shortcut: Hashable {
+    public struct Shortcut: Identifiable {
         public let key: KeyEquivalent
         public let modifiers: EventModifiers
-        public let description: String
+        public let id = UUID()
+    public let description: String
 
         public init(key: KeyEquivalent, modifiers: EventModifiers = .command, description: String) {
             self.key = key
@@ -154,30 +155,30 @@ public final class CommandSystem: ObservableObject {
     private func registerDefaultCommands() {
         commands = [
             Command(id: "new_file", title: "New File", category: "File", icon: MonoIcon.docPlus, shortcut: KeyboardShortcuts.newFile) {
-                WorkspaceState.shared.bottomPanel = .newProject
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .newProject }
             },
             Command(id: "save", title: "Save File", category: "File", icon: "arrow.down.to.line", shortcut: KeyboardShortcuts.saveFile) {},
             Command(id: "find", title: "Find", category: "Edit", icon: MonoIcon.search, shortcut: KeyboardShortcuts.find) {},
             Command(id: "command_palette", title: "Command Palette", category: "Navigation", icon: MonoIcon.command, shortcut: KeyboardShortcuts.commandPalette) {
-                WorkspaceState.shared.showCommandPalette = true
+                DispatchQueue.main.async { WorkspaceState.shared.showCommandPalette = true }
             },
             Command(id: "global_search", title: "Global Search", category: "Navigation", icon: MonoIcon.search, shortcut: KeyboardShortcuts.globalSearch) {
-                WorkspaceState.shared.showGlobalSearch = true
+                DispatchQueue.main.async { WorkspaceState.shared.showGlobalSearch = true }
             },
             Command(id: "toggle_sidebar", title: "Toggle Sidebar", category: "View", icon: MonoIcon.sidebar, shortcut: KeyboardShortcuts.toggleSidebar) {
-                WorkspaceState.shared.sidebarCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.sidebarCollapsed.toggle() }
             },
             Command(id: "toggle_terminal", title: "Toggle Terminal", category: "View", icon: MonoIcon.terminal, shortcut: KeyboardShortcuts.toggleTerminal) {
-                WorkspaceState.shared.terminalCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.terminalCollapsed.toggle() }
             },
             Command(id: "toggle_ai_chat", title: "Toggle AI Chat", category: "View", icon: MonoIcon.sparkles, shortcut: KeyboardShortcuts.toggleAIChat) {
-                WorkspaceState.shared.chatCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.chatCollapsed.toggle() }
             },
             Command(id: "build", title: "Build Project", category: "Build", icon: MonoIcon.build, shortcut: KeyboardShortcuts.build) {
-                WorkspaceState.shared.bottomPanel = .builds
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .builds }
             },
             Command(id: "settings", title: "Settings", category: "Settings", icon: MonoIcon.settings, shortcut: KeyboardShortcuts.settings) {
-                WorkspaceState.shared.bottomPanel = .settings
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .settings }
             },
         ]
     }

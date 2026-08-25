@@ -23,9 +23,9 @@ public final class CommandManager: ObservableObject {
         public let icon: String
         public let shortcut: KeyboardShortcuts.Shortcut?
         public let isEnabled: Bool
-        public let action: @MainActor () -> Void
+        public let action: () -> Void
 
-        public init(id: String, title: String, category: CommandCategory, icon: String, shortcut: KeyboardShortcuts.Shortcut? = nil, isEnabled: Bool = true, action: @escaping @MainActor () -> Void) {
+        public init(id: String, title: String, category: CommandCategory, icon: String, shortcut: KeyboardShortcuts.Shortcut? = nil, isEnabled: Bool = true, action: @escaping () -> Void) {
             self.id = id
             self.title = title
             self.category = category
@@ -62,7 +62,7 @@ public final class CommandManager: ObservableObject {
         allCommands = [
             // File
             UserCommand(id: "file.new", title: "New File", category: .file, icon: "doc.badge.plus", shortcut: KeyboardShortcuts.newFile) {
-                WorkspaceState.shared.bottomPanel = .newProject
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = } .newProject
             },
             UserCommand(id: "file.open", title: "Open File…", category: .file, icon: "folder", shortcut: KeyboardShortcuts.openFile) {},
             UserCommand(id: "file.save", title: "Save", category: .file, icon: "arrow.down.to.line", shortcut: KeyboardShortcuts.saveFile) {},
@@ -88,16 +88,16 @@ public final class CommandManager: ObservableObject {
 
             // View
             UserCommand(id: "view.toggleSidebar", title: "Toggle Sidebar", category: .view, icon: "sidebar.left", shortcut: KeyboardShortcuts.toggleSidebar) {
-                WorkspaceState.shared.sidebarCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.sidebarCollapsed.toggle() }
             },
             UserCommand(id: "view.toggleTerminal", title: "Toggle Terminal", category: .view, icon: "terminal", shortcut: KeyboardShortcuts.toggleTerminal) {
-                WorkspaceState.shared.terminalCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.terminalCollapsed.toggle() }
             },
             UserCommand(id: "view.toggleAIChat", title: "Toggle AI Chat", category: .view, icon: "sparkles", shortcut: KeyboardShortcuts.toggleAIChat) {
-                WorkspaceState.shared.chatCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.chatCollapsed.toggle() }
             },
             UserCommand(id: "view.togglePreview", title: "Toggle Preview", category: .view, icon: "eye", shortcut: KeyboardShortcuts.togglePreview) {
-                WorkspaceState.shared.previewCollapsed.toggle()
+                DispatchQueue.main.async { WorkspaceState.shared.previewCollapsed.toggle() }
             },
             UserCommand(id: "view.toggleInspector", title: "Toggle Inspector", category: .view, icon: "sidebar.right") {},
             UserCommand(id: "view.zoomIn", title: "Zoom In", category: .view, icon: "plus.magnifyingglass") {},
@@ -108,10 +108,10 @@ public final class CommandManager: ObservableObject {
 
             // Navigate
             UserCommand(id: "nav.commandPalette", title: "Command Palette", category: .navigate, icon: "command", shortcut: KeyboardShortcuts.commandPalette) {
-                WorkspaceState.shared.showCommandPalette = true
+                DispatchQueue.main.async { WorkspaceState.shared.showCommandPalette = } true
             },
             UserCommand(id: "nav.globalSearch", title: "Global Search", category: .navigate, icon: "magnifyingglass", shortcut: KeyboardShortcuts.globalSearch) {
-                WorkspaceState.shared.showGlobalSearch = true
+                DispatchQueue.main.async { WorkspaceState.shared.showGlobalSearch = } true
             },
             UserCommand(id: "nav.quickOpen", title: "Quick Open File", category: .navigate, icon: "doc.text.magnifyingglass", shortcut: KeyboardShortcuts.quickOpen) {},
             UserCommand(id: "nav.goToSymbol", title: "Go to Symbol…", category: .navigate, icon: "square.grid.2x2") {},
@@ -155,7 +155,7 @@ public final class CommandManager: ObservableObject {
 
             // AI
             UserCommand(id: "ai.ask", title: "Ask AI", category: .ai, icon: "sparkles", shortcut: KeyboardShortcuts.askAI) {
-                WorkspaceState.shared.chatCollapsed = false
+                DispatchQueue.main.async { WorkspaceState.shared.chatCollapsed = } false
             },
             UserCommand(id: "ai.switchModel", title: "Switch Model…", category: .ai, icon: "cpu", shortcut: KeyboardShortcuts.switchModel) {},
             UserCommand(id: "ai.switchAgent", title: "Switch Agent…", category: .ai, icon: "person.crop.circle", shortcut: KeyboardShortcuts.switchAgent) {},
@@ -240,7 +240,7 @@ public final class CommandManager: ObservableObject {
     // MARK: - Execution
 
     public func execute(_ command: UserCommand) {
-        Task { @MainActor in command.action() }
+        DispatchQueue.main.async { command.action() }
         // Track recent
         recentCommands.removeAll { $0.id == command.id }
         recentCommands.insert(command, at: 0)
