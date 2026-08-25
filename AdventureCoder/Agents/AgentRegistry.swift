@@ -19,6 +19,8 @@ public final class AgentRegistry {
             + MLSpecialistAgents.all
             + Web3Agents.all
             + GameDevAgents.all
+            + SecurityComplianceAgents.all
+            + TestingQAAgents.all
     }
     public func find(_ id: String) -> AgentDefinition? {
         all.first { $0.agentId == id }
