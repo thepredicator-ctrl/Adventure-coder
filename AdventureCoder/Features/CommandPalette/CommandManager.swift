@@ -61,24 +61,24 @@ public final class CommandManager: ObservableObject {
     private func registerAllCommands() {
         allCommands = [
             // File
-            UserCommand(id: "file.new", title: "New File", category: .file, icon: "doc.badge.plus", shortcut: .newFile) {
+            UserCommand(id: "file.new", title: "New File", category: .file, icon: "doc.badge.plus", shortcut: KeyboardShortcuts.newFile) {
                 WorkspaceState.shared.bottomPanel = .newProject
             },
-            UserCommand(id: "file.open", title: "Open File…", category: .file, icon: "folder", shortcut: .openFile) {},
-            UserCommand(id: "file.save", title: "Save", category: .file, icon: "arrow.down.to.line", shortcut: .saveFile) {},
+            UserCommand(id: "file.open", title: "Open File…", category: .file, icon: "folder", shortcut: KeyboardShortcuts.openFile) {},
+            UserCommand(id: "file.save", title: "Save", category: .file, icon: "arrow.down.to.line", shortcut: KeyboardShortcuts.saveFile) {},
             UserCommand(id: "file.saveAll", title: "Save All", category: .file, icon: "arrow.down.to.line.circle") {},
-            UserCommand(id: "file.close", title: "Close Tab", category: .file, icon: "xmark", shortcut: .closeTab) {},
+            UserCommand(id: "file.close", title: "Close Tab", category: .file, icon: "xmark", shortcut: KeyboardShortcuts.closeTab) {},
             UserCommand(id: "file.closeAll", title: "Close All Tabs", category: .file, icon: "xmark.circle") {},
             UserCommand(id: "file.recent", title: "Open Recent…", category: .file, icon: "clock") {},
             UserCommand(id: "file.download", title: "Download Project", category: .file, icon: "arrow.down.circle") {},
             UserCommand(id: "file.upload", title: "Upload Project", category: .file, icon: "arrow.up.circle") {},
 
             // Edit
-            UserCommand(id: "edit.find", title: "Find", category: .edit, icon: "magnifyingglass", shortcut: .find) {},
-            UserCommand(id: "edit.findReplace", title: "Find & Replace", category: .edit, icon: "magnifyingglass.circle", shortcut: .findReplace) {},
-            UserCommand(id: "edit.undo", title: "Undo", category: .edit, icon: "arrow.uturn.backward", shortcut: .undo) {},
-            UserCommand(id: "edit.redo", title: "Redo", category: .edit, icon: "arrow.uturn.forward", shortcut: .redo) {},
-            UserCommand(id: "edit.gotoLine", title: "Go to Line…", category: .edit, icon: "arrow.right.to.line", shortcut: .goToLine) {},
+            UserCommand(id: "edit.find", title: "Find", category: .edit, icon: "magnifyingglass", shortcut: KeyboardShortcuts.find) {},
+            UserCommand(id: "edit.findReplace", title: "Find & Replace", category: .edit, icon: "magnifyingglass.circle", shortcut: KeyboardShortcuts.findReplace) {},
+            UserCommand(id: "edit.undo", title: "Undo", category: .edit, icon: "arrow.uturn.backward", shortcut: KeyboardShortcuts.undo) {},
+            UserCommand(id: "edit.redo", title: "Redo", category: .edit, icon: "arrow.uturn.forward", shortcut: KeyboardShortcuts.redo) {},
+            UserCommand(id: "edit.gotoLine", title: "Go to Line…", category: .edit, icon: "arrow.right.to.line", shortcut: KeyboardShortcuts.goToLine) {},
             UserCommand(id: "edit.format", title: "Format Code", category: .edit, icon: "paintbrush.pointed") {},
             UserCommand(id: "edit.comment", title: "Toggle Comment", category: .edit, icon: "text.bubble") {},
             UserCommand(id: "edit.indent", title: "Indent", category: .edit, icon: "increase.indent") {},
@@ -87,16 +87,16 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "edit.delete", title: "Delete Line", category: .edit, icon: "minus.square") {},
 
             // View
-            UserCommand(id: "view.toggleSidebar", title: "Toggle Sidebar", category: .view, icon: "sidebar.left", shortcut: .toggleSidebar) {
+            UserCommand(id: "view.toggleSidebar", title: "Toggle Sidebar", category: .view, icon: "sidebar.left", shortcut: KeyboardShortcuts.toggleSidebar) {
                 WorkspaceState.shared.sidebarCollapsed.toggle()
             },
-            UserCommand(id: "view.toggleTerminal", title: "Toggle Terminal", category: .view, icon: "terminal", shortcut: .toggleTerminal) {
+            UserCommand(id: "view.toggleTerminal", title: "Toggle Terminal", category: .view, icon: "terminal", shortcut: KeyboardShortcuts.toggleTerminal) {
                 WorkspaceState.shared.terminalCollapsed.toggle()
             },
-            UserCommand(id: "view.toggleAIChat", title: "Toggle AI Chat", category: .view, icon: "sparkles", shortcut: .toggleAIChat) {
+            UserCommand(id: "view.toggleAIChat", title: "Toggle AI Chat", category: .view, icon: "sparkles", shortcut: KeyboardShortcuts.toggleAIChat) {
                 WorkspaceState.shared.chatCollapsed.toggle()
             },
-            UserCommand(id: "view.togglePreview", title: "Toggle Preview", category: .view, icon: "eye", shortcut: .togglePreview) {
+            UserCommand(id: "view.togglePreview", title: "Toggle Preview", category: .view, icon: "eye", shortcut: KeyboardShortcuts.togglePreview) {
                 WorkspaceState.shared.previewCollapsed.toggle()
             },
             UserCommand(id: "view.toggleInspector", title: "Toggle Inspector", category: .view, icon: "sidebar.right") {},
@@ -107,13 +107,13 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "view.minimap", title: "Toggle Minimap", category: .view, icon: "map") {},
 
             // Navigate
-            UserCommand(id: "nav.commandPalette", title: "Command Palette", category: .navigate, icon: "command", shortcut: .commandPalette) {
+            UserCommand(id: "nav.commandPalette", title: "Command Palette", category: .navigate, icon: "command", shortcut: KeyboardShortcuts.commandPalette) {
                 WorkspaceState.shared.showCommandPalette = true
             },
-            UserCommand(id: "nav.globalSearch", title: "Global Search", category: .navigate, icon: "magnifyingglass", shortcut: .globalSearch) {
+            UserCommand(id: "nav.globalSearch", title: "Global Search", category: .navigate, icon: "magnifyingglass", shortcut: KeyboardShortcuts.globalSearch) {
                 WorkspaceState.shared.showGlobalSearch = true
             },
-            UserCommand(id: "nav.quickOpen", title: "Quick Open File", category: .navigate, icon: "doc.text.magnifyingglass", shortcut: .quickOpen) {},
+            UserCommand(id: "nav.quickOpen", title: "Quick Open File", category: .navigate, icon: "doc.text.magnifyingglass", shortcut: KeyboardShortcuts.quickOpen) {},
             UserCommand(id: "nav.goToSymbol", title: "Go to Symbol…", category: .navigate, icon: "square.grid.2x2") {},
             UserCommand(id: "nav.goToDefinition", title: "Go to Definition", category: .navigate, icon: "arrow.right.square") {},
             UserCommand(id: "nav.goBack", title: "Go Back", category: .navigate, icon: "arrow.left") {},
@@ -128,23 +128,23 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "nav.prevBookmark", title: "Previous Bookmark", category: .navigate, icon: "bookmark") {},
 
             // Build
-            UserCommand(id: "build.run", title: "Build Project", category: .build, icon: "hammer", shortcut: .build) {
+            UserCommand(id: "build.run", title: "Build Project", category: .build, icon: "hammer", shortcut: KeyboardShortcuts.build) {
                 WorkspaceState.shared.bottomPanel = .builds
             },
-            UserCommand(id: "build.runTests", title: "Run Tests", category: .build, icon: "checkmark.seal", shortcut: .test) {},
-            UserCommand(id: "build.stop", title: "Stop", category: .build, icon: "stop.fill", shortcut: .stop) {},
+            UserCommand(id: "build.runTests", title: "Run Tests", category: .build, icon: "checkmark.seal", shortcut: KeyboardShortcuts.test) {},
+            UserCommand(id: "build.stop", title: "Stop", category: .build, icon: "stop.fill", shortcut: KeyboardShortcuts.stop) {},
             UserCommand(id: "build.clean", title: "Clean Build", category: .build, icon: "trash") {},
             UserCommand(id: "build.profile", title: "Profile", category: .build, icon: "speedometer") {},
             UserCommand(id: "build.analyze", title: "Analyze Code", category: .build, icon: "waveform") {},
             UserCommand(id: "build.archive", title: "Archive", category: .build, icon: "archivebox") {},
 
             // Git
-            UserCommand(id: "git.status", title: "Git Status", category: .git, icon: "circle.grid.cross", shortcut: .gitStatus) {
+            UserCommand(id: "git.status", title: "Git Status", category: .git, icon: "circle.grid.cross", shortcut: KeyboardShortcuts.gitStatus) {
                 WorkspaceState.shared.bottomPanel = .terminal
             },
-            UserCommand(id: "git.commit", title: "Git Commit…", category: .git, icon: "arrow.triangle.merge", shortcut: .gitCommit) {},
-            UserCommand(id: "git.push", title: "Git Push", category: .git, icon: "arrow.up.circle", shortcut: .gitPush) {},
-            UserCommand(id: "git.pull", title: "Git Pull", category: .git, icon: "arrow.down.circle", shortcut: .gitPull) {},
+            UserCommand(id: "git.commit", title: "Git Commit…", category: .git, icon: "arrow.triangle.merge", shortcut: KeyboardShortcuts.gitCommit) {},
+            UserCommand(id: "git.push", title: "Git Push", category: .git, icon: "arrow.up.circle", shortcut: KeyboardShortcuts.gitPush) {},
+            UserCommand(id: "git.pull", title: "Git Pull", category: .git, icon: "arrow.down.circle", shortcut: KeyboardShortcuts.gitPull) {},
             UserCommand(id: "git.branch", title: "Create Branch…", category: .git, icon: "arrow.triangle.branch") {},
             UserCommand(id: "git.checkout", title: "Switch Branch…", category: .git, icon: "arrow.triangle.swap") {},
             UserCommand(id: "git.merge", title: "Merge…", category: .git, icon: "arrow.triangle.merge") {},
@@ -154,11 +154,11 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "git.unstash", title: "Unstash Changes…", category: .git, icon: "tray.full") {},
 
             // AI
-            UserCommand(id: "ai.ask", title: "Ask AI", category: .ai, icon: "sparkles", shortcut: .askAI) {
+            UserCommand(id: "ai.ask", title: "Ask AI", category: .ai, icon: "sparkles", shortcut: KeyboardShortcuts.askAI) {
                 WorkspaceState.shared.chatCollapsed = false
             },
-            UserCommand(id: "ai.switchModel", title: "Switch Model…", category: .ai, icon: "cpu", shortcut: .switchModel) {},
-            UserCommand(id: "ai.switchAgent", title: "Switch Agent…", category: .ai, icon: "person.crop.circle", shortcut: .switchAgent) {},
+            UserCommand(id: "ai.switchModel", title: "Switch Model…", category: .ai, icon: "cpu", shortcut: KeyboardShortcuts.switchModel) {},
+            UserCommand(id: "ai.switchAgent", title: "Switch Agent…", category: .ai, icon: "person.crop.circle", shortcut: KeyboardShortcuts.switchAgent) {},
             UserCommand(id: "ai.clearConversation", title: "Clear Conversation", category: .ai, icon: "trash") {},
             UserCommand(id: "ai.exportConversation", title: "Export Conversation", category: .ai, icon: "square.and.arrow.up") {},
             UserCommand(id: "ai.agentActivity", title: "Show Agent Activity", category: .ai, icon: "bolt") {},
@@ -180,8 +180,8 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "remote.status", title: "Show Remote PC Status", category: .remote, icon: "pc") {},
 
             // Terminal
-            UserCommand(id: "terminal.new", title: "New Terminal", category: .terminal, icon: "plus.app", shortcut: .newTerminal) {},
-            UserCommand(id: "terminal.clear", title: "Clear Terminal", category: .terminal, icon: "clear", shortcut: .clearTerminal) {},
+            UserCommand(id: "terminal.new", title: "New Terminal", category: .terminal, icon: "plus.app", shortcut: KeyboardShortcuts.newTerminal) {},
+            UserCommand(id: "terminal.clear", title: "Clear Terminal", category: .terminal, icon: "clear", shortcut: KeyboardShortcuts.clearTerminal) {},
             UserCommand(id: "terminal.split", title: "Split Terminal", category: .terminal, icon: "square.split.2x1") {},
             UserCommand(id: "terminal.close", title: "Close Terminal", category: .terminal, icon: "xmark") {},
 
@@ -201,7 +201,7 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "tools.metrics", title: "Show Code Metrics", category: .tools, icon: "chart.bar") {},
 
             // Settings
-            UserCommand(id: "settings.open", title: "Open Settings", category: .settings, icon: "gearshape", shortcut: .settings) {
+            UserCommand(id: "settings.open", title: "Open Settings", category: .settings, icon: "gearshape", shortcut: KeyboardShortcuts.settings) {
                 WorkspaceState.shared.bottomPanel = .settings
             },
             UserCommand(id: "settings.providers", title: "AI Provider Settings", category: .settings, icon: "key") {},
