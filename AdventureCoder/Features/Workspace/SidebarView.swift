@@ -396,6 +396,7 @@ struct RemoteNewProjectSheet: View {
     @State private var isCreating = false
     @State private var error: String?
     @StateObject private var store = RemotePCStore.shared
+    @StateObject private var workspace = WorkspaceState.shared
 
     var body: some View {
         NavigationStack {

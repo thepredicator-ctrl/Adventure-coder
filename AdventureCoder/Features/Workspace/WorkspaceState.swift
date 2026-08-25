@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// The shared app state used across the workspace.
+@MainActor
 public final class WorkspaceState: ObservableObject {
     public static let shared = WorkspaceState()
 

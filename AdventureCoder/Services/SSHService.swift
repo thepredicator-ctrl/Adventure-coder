@@ -75,19 +75,11 @@ public final class SSHService: ObservableObject {
     ) async throws {
         guard port > 0 && port < 65536 else { throw SSHError.invalidPort }
         guard !host.isEmpty else { throw SSHError.hostUnreachable }
-        guard password != nil || privateKey != nil else {
-            throw SSHError.authenticationFailed("No credentials provided")
+        guard let password = password else {
+            throw SSHError.authenticationFailed("Password authentication is required. Private key auth is not yet supported.")
         }
 
-        let authDelegate: NIOSSHClientUserAuthenticationDelegate
-        if let privateKey = privateKey, !privateKey.isEmpty {
-            let key = try NIOSSHPrivateKey(pemKey: privateKey)
-            authDelegate = PrivateKeyDelegate(username: username, privateKey: key)
-        } else if let password = password {
-            authDelegate = SimplePasswordDelegate(username: username, password: password)
-        } else {
-            throw SSHError.authenticationFailed("No credentials provided")
-        }
+        let authDelegate = SimplePasswordDelegate(username: username, password: password)
 
         let serverAuthDelegate = AcceptAllHostKeyDelegate()
 

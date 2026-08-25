@@ -129,7 +129,8 @@ public struct RemoteListFilesTool: Tool {
     public let definition = ToolDefinition.find("remote_list_files") ?? ToolDefinition(
         name: "remote_list_files", category: .file, summary: "List files on the remote PC", description: "")
     public func invoke(parameters: [String: Any], context: ToolContext) async throws -> ToolResult {
-        let path = (parameters["path"] as? String) ?? (await MainActor.run { RemotePCStore.shared.environment?.workspacePath } ?? ".")
+        let defaultPath = await MainActor.run { RemotePCStore.shared.environment?.workspacePath } ?? "."
+        let path = (parameters["path"] as? String) ?? defaultPath
         do {
             let entries = try await RemoteFileService.shared.listFiles(path)
             let arr: [[String: Any]] = entries.map { e in
@@ -150,7 +151,8 @@ public struct RemoteSearchFilesTool: Tool {
         guard let query = parameters["query"] as? String else {
             return ToolResult(toolName: definition.name, success: false, output: "", error: "Missing 'query'.")
         }
-        let dir = (parameters["directory"] as? String) ?? (await MainActor.run { RemotePCStore.shared.environment?.workspacePath } ?? ".")
+        let defaultDir = await MainActor.run { RemotePCStore.shared.environment?.workspacePath } ?? "."
+        let dir = (parameters["directory"] as? String) ?? defaultDir
         do {
             let hits = try await RemoteFileService.shared.searchFiles(query: query, in: dir)
             let arr: [[String: Any]] = hits.map { ["path": $0.path, "line": $0.line, "snippet": $0.snippet] }
