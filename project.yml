@@ -10,6 +10,9 @@ packages:
   NIOSSH:
     url: https://github.com/apple/swift-nio-ssh.git
     from: 0.3.0
+  SwiftNIO:
+    url: https://github.com/apple/swift-nio.git
+    from: 2.43.0
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -39,6 +42,10 @@ targets:
           - "*.entitlements"
     dependencies:
       - package: NIOSSH
+      - package: SwiftNIO
+        product: NIOCore
+      - package: SwiftNIO
+        product: NIOPosix
     info:
       path: AdventureCoder/Resources/Info.plist
       properties:

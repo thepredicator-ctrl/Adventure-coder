@@ -81,6 +81,7 @@ struct MergeEditorView: View {
     let localContent: String
     let remoteContent: String
     @Binding var mergedContent: String
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -129,21 +130,5 @@ struct MergeEditorView: View {
                 }
             }
         }
-        .environment(\.dismissMerge, {})
     }
-
-    private func dismiss() {
-        // The sheet will be dismissed by the binding
-    }
-}
-
-private extension EnvironmentValues {
-    var dismissMerge: () -> Void {
-        get { self[DismissMergeKey.self] }
-        set { self[DismissMergeKey.self] = newValue }
-    }
-}
-
-private struct DismissMergeKey: EnvironmentKey {
-    static let defaultValue: () -> Void = {}
 }

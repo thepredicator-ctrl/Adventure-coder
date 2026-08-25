@@ -19,7 +19,7 @@ public enum KeychainService {
         case decodeFailed
     }
 
-    private static let service = "com.adventurecoder.app"
+    static let service = "com.adventurecoder.app"
 
     // MARK: - Save / load / delete
 

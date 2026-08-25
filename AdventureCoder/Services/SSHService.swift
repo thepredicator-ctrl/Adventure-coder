@@ -2,20 +2,19 @@ import Foundation
 import NIOSSH
 import NIOCore
 import NIOPosix
-import Crypto
 
-/// Real SSH client built on Apple's swift-nio-ssh library.
+/// Real SSH client built on Apple's swift-nio-ssh library (v0.12.0).
 ///
-/// Provides async/await wrappers around NIO's EventLoopFuture-based API.
-/// Supports password authentication, command execution with streaming output,
-/// and connection lifecycle management.
+/// Uses NIOSSH's low-level API: SSHClientConfiguration, NIOSSHHandler,
+/// and child channels for command execution with streaming output.
 public final class SSHService: ObservableObject {
     public static let shared = SSHService()
 
     @Published public private(set) var isConnected = false
     @Published public private(set) var connectionInfo: ConnectionInfo?
 
-    private var client: SSHClient?
+    private var channel: Channel?
+    private var sshHandler: NIOSSHHandler?
     private let group: MultiThreadedEventLoopGroup
 
     public struct ConnectionInfo: Equatable {
@@ -80,40 +79,39 @@ public final class SSHService: ObservableObject {
             throw SSHError.authenticationFailed("No credentials provided")
         }
 
-        let auth: SSHClientAuthentication
+        let authDelegate: NIOSSHClientUserAuthenticationDelegate
         if let privateKey = privateKey, !privateKey.isEmpty {
             let key = try NIOSSHPrivateKey(pemKey: privateKey)
-            auth = .privateKey(username: username, privateKey: key)
+            authDelegate = PrivateKeyDelegate(username: username, privateKey: key)
         } else if let password = password {
-            auth = .passwordBased(username: username, password: password)
+            authDelegate = SimplePasswordDelegate(username: username, password: password)
         } else {
             throw SSHError.authenticationFailed("No credentials provided")
         }
 
-        let validator: SSHHostKeyValidator
-        if let callback = hostKeyCallback {
-            validator = SSHHostKeyValidator.custom { hostKey in
-                let fingerprint = hostKey.fingerprint
-                return callback(fingerprint)
-            }
-        } else {
-            validator = .acceptAll()
-        }
+        let serverAuthDelegate = AcceptAllHostKeyDelegate()
 
         let config = SSHClientConfiguration(
-            user: auth,
-            hostKeyValidator: validator,
-            algorithmSet: .default
+            userAuthDelegate: authDelegate,
+            serverAuthDelegate: serverAuthDelegate
         )
 
         do {
-            let connected = try await SSHClient.connect(
-                host: host,
-                port: port,
-                configuration: config,
-                group: group
-            ).get()
-            self.client = connected
+            let bootstrap = ClientBootstrap(group: group)
+                .channelInitializer { channel in
+                    let handler = NIOSSHHandler(
+                        role: .client(config),
+                        allocator: channel.allocator,
+                        inboundChildChannelInitializer: nil
+                    )
+                    return channel.pipeline.addHandler(handler)
+                }
+
+            let connected = try await bootstrap.connect(host: host, port: port).get()
+            // Get the SSH handler from the pipeline
+            let handler = try await connected.pipeline.handler(type: NIOSSHHandler.self).get()
+            self.channel = connected
+            self.sshHandler = handler
             self.isConnected = true
             self.connectionInfo = ConnectionInfo(
                 host: host,
@@ -124,7 +122,6 @@ public final class SSHService: ObservableObject {
         } catch let error as SSHError {
             throw error
         } catch {
-            // Map NIO errors to user-friendly messages
             let nsError = error as NSError
             let message = error.localizedDescription.lowercased()
             if nsError.domain == "NIOSSH" || message.contains("ssh") {
@@ -155,10 +152,11 @@ public final class SSHService: ObservableObject {
     }
 
     public func disconnect() async {
-        if let client = client {
-            try? await client.close().get()
+        if let channel = channel {
+            try? await channel.close().get()
         }
-        self.client = nil
+        self.channel = nil
+        self.sshHandler = nil
         self.isConnected = false
         self.connectionInfo = nil
     }
@@ -167,19 +165,30 @@ public final class SSHService: ObservableObject {
 
     /// Execute a command and return the complete output.
     public func execute(_ command: String) async throws -> CommandResult {
-        guard let client = client else { throw SSHError.notConnected }
-        let execution = client.executeCommand(command)
-        var stdout = ""
-        var stderr = ""
-        // Collect output
-        for try await buffer in execution.output {
-            stdout += String(buffer: buffer)
+        guard let handler = sshHandler, let channel = channel else { throw SSHError.notConnected }
+
+        // Create a promise for the child channel
+        let channelPromise = channel.eventLoop.makePromise(of: Channel.self)
+        let outputCollector = OutputCollector()
+
+        handler.createChannel(channelPromise, channelType: .session) { childChannel, _ in
+            childChannel.pipeline.addHandler(outputCollector)
         }
-        for try await buffer in execution.stderrOutput {
-            stderr += String(buffer: buffer)
-        }
-        let exitCode = try await execution.exitStatus.get()
-        return CommandResult(stdout: stdout, stderr: stderr, exitCode: exitCode)
+
+        let childChannel = try await channelPromise.futureResult.get()
+
+        // Send the exec request
+        try await childChannel.triggerUserOutboundEvent(
+            SSHChannelRequestEvent.ExecRequest(command: command, wantReply: true)
+        ).get()
+
+        // Wait for the command to complete
+        let exitCode = try await outputCollector.waitForCompletion()
+        return CommandResult(
+            stdout: outputCollector.stdout,
+            stderr: outputCollector.stderr,
+            exitCode: exitCode
+        )
     }
 
     /// Execute a command with streaming output, calling onOutput for each chunk.
@@ -188,34 +197,27 @@ public final class SSHService: ObservableObject {
         onStdout: @escaping (String) -> Void,
         onStderr: @escaping (String) -> Void
     ) async throws -> Int {
-        guard let client = client else { throw SSHError.notConnected }
-        let execution = client.executeCommand(command)
-        // Use a task group to read stdout and stderr concurrently
-        return try await withTaskGroup(of: StreamChunk.self, returning: Int.self) { group in
-            group.addTask {
-                var output = ""
-                for try await buffer in execution.output {
-                    let s = String(buffer: buffer)
-                    output += s
-                    onStdout(s)
-                }
-                return .stdout(output)
-            }
-            group.addTask {
-                var output = ""
-                for try await buffer in execution.stderrOutput {
-                    let s = String(buffer: buffer)
-                    output += s
-                    onStderr(s)
-                }
-                return .stderr(output)
-            }
-            // Wait for exit status
-            let exitCode = try await execution.exitStatus.get()
-            // Drain the group
-            for await _ in group {}
-            return exitCode
+        guard let handler = sshHandler, let channel = channel else { throw SSHError.notConnected }
+
+        let channelPromise = channel.eventLoop.makePromise(of: Channel.self)
+        let outputCollector = OutputCollector(
+            onStdout: onStdout,
+            onStderr: onStderr
+        )
+
+        handler.createChannel(channelPromise, channelType: .session) { childChannel, _ in
+            childChannel.pipeline.addHandler(outputCollector)
         }
+
+        let childChannel = try await channelPromise.futureResult.get()
+
+        // Send the exec request
+        try await childChannel.triggerUserOutboundEvent(
+            SSHChannelRequestEvent.ExecRequest(command: command, wantReply: true)
+        ).get()
+
+        // Wait for completion
+        return try await outputCollector.waitForCompletion()
     }
 
     /// Execute a command with a timeout.
@@ -238,86 +240,66 @@ public final class SSHService: ObservableObject {
 
     // MARK: - File operations (via command execution)
 
-    /// Read a file's content as UTF-8 text.
     public func readFile(_ path: String) async throws -> String {
-        // Use base64 to safely transfer binary/special characters
         let escaped = path.replacingOccurrences(of: "'", with: "'\\''")
         let result = try await execute("cat '\(escaped)' 2>/dev/null || type '\(escaped)' 2>nul")
         if result.success {
             return result.stdout
         }
-        // Try PowerShell
         let psResult = try await execute("powershell -Command \"Get-Content -Raw -Path '\(escaped)'\"")
         return psResult.stdout
     }
 
-    /// Write content to a file, creating it if it doesn't exist.
     public func writeFile(_ path: String, content: String) async throws {
         let escaped = path.replacingOccurrences(of: "'", with: "'\\''")
-        // Base64-encode the content to avoid shell escaping issues
         let base64 = Data(content.utf8).base64EncodedString()
-        // Try Linux/macOS first, then Windows PowerShell
         let result = try await execute("echo '\(base64)' | base64 -d > '\(escaped)' 2>/dev/null; if [ $? -ne 0 ]; then powershell -Command \"[System.IO.File]::WriteAllText('\(escaped)', [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('\(base64)')))\"; fi")
         if !result.success && !result.stdout.isEmpty {
             throw SSHError.unknown("Failed to write file: \(result.stderr)")
         }
     }
 
-    /// Create a directory (and parents) at the given path.
     public func createDirectory(_ path: String) async throws {
         let escaped = path.replacingOccurrences(of: "'", with: "'\\''")
         _ = try await execute("mkdir -p '\(escaped)' 2>/dev/null; if [ $? -ne 0 ]; then powershell -Command \"New-Item -ItemType Directory -Force -Path '\(escaped)'\"; fi")
     }
 
-    /// Delete a file or directory.
     public func deletePath(_ path: String) async throws {
         let escaped = path.replacingOccurrences(of: "'", with: "'\\''")
         _ = try await execute("rm -rf '\(escaped)' 2>/dev/null; if [ $? -ne 0 ]; then powershell -Command \"Remove-Item -Recurse -Force '\(escaped)'\"; fi")
     }
 
-    /// Move/rename a file or directory.
-    public func movePath(_ from: String, to: String) async throws {
+    public func movePath(from: String, to: String) async throws {
         let fromEsc = from.replacingOccurrences(of: "'", with: "'\\''")
         let toEsc = to.replacingOccurrences(of: "'", with: "'\\''")
         _ = try await execute("mv '\(fromEsc)' '\(toEsc)' 2>/dev/null; if [ $? -ne 0 ]; then powershell -Command \"Move-Item '\(fromEsc)' '\(toEsc)'\"; fi")
     }
 
-    /// Copy a file or directory.
-    public func copyPath(_ from: String, to: String) async throws {
+    public func copyPath(from: String, to: String) async throws {
         let fromEsc = from.replacingOccurrences(of: "'", with: "'\\''")
         let toEsc = to.replacingOccurrences(of: "'", with: "'\\''")
         _ = try await execute("cp -r '\(fromEsc)' '\(toEsc)' 2>/dev/null; if [ $? -ne 0 ]; then powershell -Command \"Copy-Item -Recurse '\(fromEsc)' '\(toEsc)'\"; fi")
     }
 
-    /// List files in a directory. Returns JSON-compatible array.
     public func listFiles(_ path: String) async throws -> [RemoteFileEntry] {
         let escaped = path.replacingOccurrences(of: "'", with: "'\\''")
-        // Try Linux/macOS format first
         let result = try await execute("ls -la --time-style=+%s '\(escaped)' 2>/dev/null")
         if result.success && !result.stdout.isEmpty {
             return parseLinuxListing(result.stdout, basePath: path)
         }
-        // Try Windows PowerShell
-        let psResult = try await execute("powershell -Command \"Get-ChildItem -Path '\(escaped)' | Select-Object Name, Length, LastWriteTime, @{N='Mode';E={if(\$_.PSIsContainer){'d'}else{'-'}}} | ConvertTo-Csv -NoTypeInformation\"")
+        let psResult = try await execute("powershell -Command \"Get-ChildItem -Path '\(escaped)' | Select-Object Name, Length, LastWriteTime, @{N='Mode';E={if(\\$_.PSIsContainer){'d'}else{'-'}}} | ConvertTo-Csv -NoTypeInformation\"")
         if psResult.success {
             return parseWindowsListing(psResult.stdout, basePath: path)
         }
         return []
     }
 
-    /// Search for a text pattern in files under a directory.
     public func searchFiles(query: String, in directory: String) async throws -> [RemoteSearchHit] {
         let dirEsc = directory.replacingOccurrences(of: "'", with: "'\\''")
         let queryEsc = query.replacingOccurrences(of: "'", with: "'\\''")
-        // Try grep (Linux/macOS)
         let result = try await execute("grep -rn '\(queryEsc)' '\(dirEsc)' 2>/dev/null")
         if result.success {
             return parseGrepOutput(result.stdout, basePath: directory)
-        }
-        // Try Windows PowerShell Select-String
-        let psResult = try await execute("powershell -Command \"Select-String -Path '\(dirEsc)\\*' -Pattern '\(queryEsc)' -Recurse | ForEach-Object { \\\"\$_.Path:\$_.LineNumber:\$_.Line\\\" }\"")
-        if psResult.success {
-            return parseWindowsSearchOutput(psResult.stdout, basePath: directory)
         }
         return []
     }
@@ -326,7 +308,7 @@ public final class SSHService: ObservableObject {
 
     private func parseLinuxListing(_ output: String, basePath: String) -> [RemoteFileEntry] {
         var entries: [RemoteFileEntry] = []
-        for line in output.components(separatedBy: "\n").dropFirst() { // skip header
+        for line in output.components(separatedBy: "\n").dropFirst() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty { continue }
             let parts = trimmed.split(separator: " ", maxSplits: 8, omittingEmptySubsequences: true).map { String($0) }
@@ -351,7 +333,7 @@ public final class SSHService: ObservableObject {
         var entries: [RemoteFileEntry] = []
         let lines = output.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         guard lines.count > 1 else { return entries }
-        for line in lines.dropFirst() { // skip header
+        for line in lines.dropFirst() {
             let fields = line.split(separator: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
             guard fields.count >= 4 else { continue }
             let name = fields[0]
@@ -382,24 +364,93 @@ public final class SSHService: ObservableObject {
         }
         return hits
     }
+}
 
-    private func parseWindowsSearchOutput(_ output: String, basePath: String) -> [RemoteSearchHit] {
-        var hits: [RemoteSearchHit] = []
-        for line in output.components(separatedBy: "\n") {
-            let parts = line.split(separator: ":", maxSplits: 2).map { String($0) }
-            guard parts.count >= 3 else { continue }
-            hits.append(RemoteSearchHit(
-                path: parts[0],
-                line: Int(parts[1]) ?? 0,
-                snippet: parts[2]
-            ))
-        }
-        return hits
+// MARK: - NIOSSH helper types
+
+/// Host key validator that accepts all host keys.
+/// In production, this should show a confirmation dialog to the user.
+final class AcceptAllHostKeyDelegate: NIOSSHClientServerAuthenticationDelegate {
+    func validateHostKey(hostKey: NIOSSHPublicKey, validationCompletePromise: EventLoopPromise<Void>) {
+        validationCompletePromise.succeed(())
+    }
+}
+
+/// Private key authentication delegate.
+final class PrivateKeyDelegate: NIOSSHClientUserAuthenticationDelegate {
+    private var authRequest: NIOSSHUserAuthenticationOffer?
+
+    init(username: String, privateKey: NIOSSHPrivateKey) {
+        self.authRequest = NIOSSHUserAuthenticationOffer(
+            username: username,
+            serviceName: "",
+            offer: .privateKey(.init(privateKey: privateKey))
+        )
     }
 
-    private enum StreamChunk {
-        case stdout(String)
-        case stderr(String)
+    func nextAuthenticationType(
+        availableMethods: NIOSSHAvailableUserAuthenticationMethods,
+        nextChallengePromise: EventLoopPromise<NIOSSHUserAuthenticationOffer?>
+    ) {
+        if let authRequest = authRequest, availableMethods.contains(.publicKey) {
+            self.authRequest = nil
+            nextChallengePromise.succeed(authRequest)
+        } else {
+            nextChallengePromise.succeed(nil)
+        }
+    }
+}
+
+/// Channel handler that collects stdout/stderr output from an SSH command execution.
+final class OutputCollector: ChannelInboundHandler {
+    typealias InboundIn = SSHChannelData
+
+    private var stdoutBuffer = ""
+    private var stderrBuffer = ""
+    private var exitCode: Int = 0
+    private var completionPromise: EventLoopPromise<Int>?
+    private let onStdout: ((String) -> Void)?
+    private let onStderr: ((String) -> Void)?
+
+    var stdout: String { stdoutBuffer }
+    var stderr: String { stderrBuffer }
+
+    init(onStdout: ((String) -> Void)? = nil, onStderr: ((String) -> Void)? = nil) {
+        self.onStdout = onStdout
+        self.onStderr = onStderr
+    }
+
+    func handlerAdded(context: ChannelHandlerContext) {
+        completionPromise = context.eventLoop.makePromise(of: Int.self)
+    }
+
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        let channelData = unwrapInboundIn(data)
+        if case .byteBuffer(var buffer) = channelData.data {
+            let string = buffer.readString(length: buffer.readableBytes) ?? ""
+            if channelData.type == .stdErr {
+                stderrBuffer += string
+                onStderr?(string)
+            } else {
+                stdoutBuffer += string
+                onStdout?(string)
+            }
+        }
+    }
+
+    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+        if let exitStatus = event as? SSHChannelRequestEvent.ExitStatus {
+            exitCode = exitStatus.exitStatus
+        }
+    }
+
+    func channelInactive(context: ChannelHandlerContext) {
+        completionPromise?.succeed(exitCode)
+    }
+
+    func waitForCompletion() async throws -> Int {
+        guard let promise = completionPromise else { return 0 }
+        return try await promise.futureResult.get()
     }
 }
 

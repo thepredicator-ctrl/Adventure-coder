@@ -247,7 +247,7 @@ public final class RemoteProjectService {
                 """),
                 ("src/main.rs", """
                 fn main() {
-                    println!("\(name ready");
+                    println!("\(name) ready");
                 }
                 """)
             ]

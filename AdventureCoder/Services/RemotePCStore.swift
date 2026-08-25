@@ -208,15 +208,15 @@ public final class RemotePCStore: ObservableObject {
             env.workspacePath = "C:\\Users\\\(machine.username)\\coder"
         } else if osOutput.lowercased().contains("darwin") || osOutput.lowercased().contains("mac") {
             env.os = .macos
-            env.osVersion = (try? await SSHService.shared.execute("sw_vers -productVersion")).stdout ?? ""
-            env.shell = (try? await SSHService.shared.execute("echo $SHELL")).stdout ?? "/bin/bash"
-            env.cpuArchitecture = (try? await SSHService.shared.execute("uname -m")).stdout ?? ""
+            env.osVersion = (try? await SSHService.shared.execute("sw_vers -productVersion"))?.stdout ?? ""
+            env.shell = (try? await SSHService.shared.execute("echo $SHELL"))?.stdout ?? "/bin/bash"
+            env.cpuArchitecture = (try? await SSHService.shared.execute("uname -m"))?.stdout ?? ""
             env.workspacePath = "/Users/\(machine.username)/coder"
         } else if !osOutput.isEmpty {
             env.os = .linux
             env.osVersion = osOutput
-            env.shell = (try? await SSHService.shared.execute("echo $SHELL")).stdout ?? "/bin/bash"
-            env.cpuArchitecture = (try? await SSHService.shared.execute("uname -m")).stdout ?? ""
+            env.shell = (try? await SSHService.shared.execute("echo $SHELL"))?.stdout ?? "/bin/bash"
+            env.cpuArchitecture = (try? await SSHService.shared.execute("uname -m"))?.stdout ?? ""
             env.workspacePath = "/home/\(machine.username)/coder"
         }
 
