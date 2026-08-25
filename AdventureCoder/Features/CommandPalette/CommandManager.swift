@@ -129,7 +129,7 @@ public final class CommandManager: ObservableObject {
 
             // Build
             UserCommand(id: "build.run", title: "Build Project", category: .build, icon: "hammer", shortcut: KeyboardShortcuts.build) {
-                WorkspaceState.shared.bottomPanel = .builds
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .builds }
             },
             UserCommand(id: "build.runTests", title: "Run Tests", category: .build, icon: "checkmark.seal", shortcut: KeyboardShortcuts.test) {},
             UserCommand(id: "build.stop", title: "Stop", category: .build, icon: "stop.fill", shortcut: KeyboardShortcuts.stop) {},
@@ -140,7 +140,7 @@ public final class CommandManager: ObservableObject {
 
             // Git
             UserCommand(id: "git.status", title: "Git Status", category: .git, icon: "circle.grid.cross", shortcut: KeyboardShortcuts.gitStatus) {
-                WorkspaceState.shared.bottomPanel = .terminal
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .terminal }
             },
             UserCommand(id: "git.commit", title: "Git Commit…", category: .git, icon: "arrow.triangle.merge", shortcut: KeyboardShortcuts.gitCommit) {},
             UserCommand(id: "git.push", title: "Git Push", category: .git, icon: "arrow.up.circle", shortcut: KeyboardShortcuts.gitPush) {},
@@ -167,13 +167,13 @@ public final class CommandManager: ObservableObject {
             UserCommand(id: "remote.connect", title: "Connect to Remote PC…", category: .remote, icon: "link") {},
             UserCommand(id: "remote.disconnect", title: "Disconnect from Remote PC", category: .remote, icon: "link.badge.plus") {},
             UserCommand(id: "remote.terminal", title: "Open Remote Terminal", category: .remote, icon: "terminal") {
-                WorkspaceState.shared.bottomPanel = .remoteTerminal
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .remoteTerminal }
             },
             UserCommand(id: "remote.preview", title: "Open Remote Preview", category: .remote, icon: "play.rectangle") {
-                WorkspaceState.shared.bottomPanel = .remotePreview
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .remotePreview }
             },
             UserCommand(id: "remote.dashboard", title: "Open Remote Dashboard", category: .remote, icon: "gauge") {
-                WorkspaceState.shared.bottomPanel = .remoteDashboard
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .remoteDashboard }
             },
             UserCommand(id: "remote.upload", title: "Upload to Remote PC…", category: .remote, icon: "arrow.up.circle") {},
             UserCommand(id: "remote.download", title: "Download from Remote PC…", category: .remote, icon: "arrow.down.circle") {},
@@ -202,7 +202,7 @@ public final class CommandManager: ObservableObject {
 
             // Settings
             UserCommand(id: "settings.open", title: "Open Settings", category: .settings, icon: "gearshape", shortcut: KeyboardShortcuts.settings) {
-                WorkspaceState.shared.bottomPanel = .settings
+                DispatchQueue.main.async { WorkspaceState.shared.bottomPanel = .settings }
             },
             UserCommand(id: "settings.providers", title: "AI Provider Settings", category: .settings, icon: "key") {},
             UserCommand(id: "settings.models", title: "Model Settings", category: .settings, icon: "cpu") {},
