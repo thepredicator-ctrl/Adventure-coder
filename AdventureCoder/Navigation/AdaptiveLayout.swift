@@ -31,26 +31,25 @@ public struct CleanIPadLayout: View {
     public init() {}
 
     public var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             // Sidebar
             AppSidebar(selectedPage: $selectedPage)
-                .navigationTitle("Adventure Coder")
-                .navigationBarTitleDisplayMode(.inline)
-        } detail: {
+                .frame(width: 260)
+                .background(MonoColor.panel)
+            HairlineDivider(vertical: true)
             // Full-screen content page
-            AppPageView(page: selectedPage)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { showCommandPalette = true }) {
-                            Image(systemName: "magnifyingglass")
-                        }
-                        .keyboardShortcut("k", modifiers: .command)
-                    }
-                }
+            VStack(spacing: 0) {
+                AppPageView(page: selectedPage)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(MonoColor.canvas)
         }
         .preferredColorScheme(settings.colorScheme)
-        .sheet(isPresented: $showCommandPalette) {
-            CommandPaletteView()
+        .overlay {
+            if showCommandPalette {
+                CommandPaletteView()
+                    .onTapGesture { showCommandPalette = false }
+            }
         }
     }
 }
@@ -121,12 +120,22 @@ struct AppSidebar: View {
     @StateObject private var remoteStore = RemotePCStore.shared
 
     var body: some View {
-        List(selection: $selectedPage) {
+        List {
             Section("Workspace") {
                 ForEach(AppPage.allCases, id: \.self) { page in
-                    NavigationLink(value: page) {
-                        Label(page.title, systemImage: page.icon)
+                    Button(action: { selectedPage = page }) {
+                        HStack {
+                            Label(page.title, systemImage: page.icon)
+                                .foregroundColor(selectedPage == page ? MonoColor.active : MonoColor.primaryText)
+                            Spacer()
+                            if selectedPage == page {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(MonoColor.tertiaryText)
+                            }
+                        }
                     }
+                    .buttonStyle(.plain)
                 }
             }
 
