@@ -67,7 +67,7 @@ public struct RedesignedWorkspace: View {
                     if sidebarVisible {
                         RedesignedSidebar()
                             .frame(width: sidebarWidth)
-                        ResizeBar { delta in
+                        PanelResizeBar { delta in
                             sidebarWidth = max(180, min(400, sidebarWidth + delta))
                         }
                     }
@@ -75,7 +75,7 @@ public struct RedesignedWorkspace: View {
                         EditorPaneView()
                         if bottomPanelVisible {
                             HairlineDivider()
-                            ResizeBar(vertical: true) { delta in
+                            PanelResizeBar(vertical: true) { delta in
                                 bottomPanelHeight = max(120, min(500, bottomPanelHeight - delta))
                             }
                             bottomPanel
@@ -83,7 +83,7 @@ public struct RedesignedWorkspace: View {
                         }
                     }
                     if aiVisible && hSize == .regular {
-                        ResizeBar { delta in
+                        PanelResizeBar { delta in
                             aiWidth = max(280, min(500, aiWidth - delta))
                         }
                         AIPanel()
@@ -253,7 +253,7 @@ struct TopBarButton: View {
 
 // MARK: - Resize Bar
 
-struct ResizeBar: View {
+struct PanelResizeBar: View {
     let vertical: Bool
     let onChange: (CGFloat) -> Void
 
@@ -490,6 +490,18 @@ struct FileTreeSection: View {
 
     @ViewBuilder
     private func fileRow(_ node: FileNode, depth: Int) -> some View {
+        VStack(spacing: 0) {
+            fileRowContent(node, depth: depth)
+            if node.isDirectory && expanded.contains(node.relativePath) {
+                ForEach(node.children, id: \.relativePath) { child in
+                    fileRow(child, depth: depth + 1)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func fileRowContent(_ node: FileNode, depth: Int) -> some View {
         let indent = CGFloat(depth) * 12
         Button(action: {
             if node.isDirectory {
@@ -522,12 +534,6 @@ struct FileTreeSection: View {
             .background(workspace.activeFile?.relativePath == node.relativePath ? Color.white.opacity(0.05) : Color.clear)
         }
         .buttonStyle(.plain)
-
-        if node.isDirectory && expanded.contains(node.relativePath) {
-            ForEach(node.children, id: \.relativePath) { child in
-                fileRow(child, depth: depth + 1)
-            }
-        }
     }
 
     private func refresh() {
@@ -1155,7 +1161,7 @@ struct AIPanel: View {
         }
         .background(Color.black.opacity(0.9))
         .sheet(isPresented: $showModelPicker) {
-            ModelPickerPopover()
+            CompactModelPicker()
                 .presentationDetents([.medium])
         }
     }
@@ -1216,7 +1222,7 @@ struct AIPanel: View {
     }
 }
 
-struct ModelPickerPopover: View {
+struct CompactModelPicker: View {
     @StateObject private var modelStore = CachedModelStore.shared
     @StateObject private var settings = SettingsStore.shared
 
