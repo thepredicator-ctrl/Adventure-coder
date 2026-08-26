@@ -163,7 +163,7 @@ public struct CompleteSettingsView: View {
                 HStack {
                     Label("Agents", systemImage: "person.3")
                     Spacer()
-                    Text("\(settings.enabledAgents.count} enabled")
+                    Text(String(settings.enabledAgents.count) + " enabled")
                         .font(.system(size: 12))
                         .foregroundColor(Color(white: 0.4))
                 }
