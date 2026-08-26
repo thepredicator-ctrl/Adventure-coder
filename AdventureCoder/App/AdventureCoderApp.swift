@@ -54,20 +54,24 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 }
 
-/// Root view: shows sign-in first, then the main workspace.
+/// Root view: shows sign-in first, then onboarding, then the main workspace.
 struct RootView: View {
     @StateObject private var workspace = WorkspaceState.shared
     @StateObject private var modelStore = CachedModelStore.shared
     @StateObject private var auth = AuthManager.shared
+    @State private var onboardingCompleted = UserDefaults.standard.bool(forKey: "onboarding_completed")
 
     var body: some View {
         ZStack {
             if !auth.isSignedIn {
                 SignInView()
-            } else if ProjectStore.shared.projects.isEmpty && workspace.currentProject == nil {
-                OnboardingView()
+                    .transition(.opacity)
+            } else if !onboardingCompleted {
+                OnboardingFlow(isCompleted: $onboardingCompleted)
+                    .transition(.opacity)
             } else {
-                AdaptiveLayout()
+                MainNavigation()
+                    .transition(.opacity)
             }
             if workspace.showCommandPalette {
                 CommandPaletteView()
@@ -77,6 +81,8 @@ struct RootView: View {
             }
         }
         .background(Color.black.ignoresSafeArea())
+        .animation(.easeInOut(duration: 0.4), value: auth.isSignedIn)
+        .animation(.easeInOut(duration: 0.4), value: onboardingCompleted)
         .task {
             await modelStore.refresh()
             if workspace.currentProject == nil, let first = ProjectStore.shared.projects.first {
