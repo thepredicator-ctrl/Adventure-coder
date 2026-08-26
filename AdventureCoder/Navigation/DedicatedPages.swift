@@ -764,51 +764,9 @@ struct MachineCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Image(systemName: "pc")
-                    .font(.system(size: 28))
-                    .foregroundColor(isConnected ? .green : Color(white: 0.3))
-                    .frame(width: 40)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(machine.name)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                        if isConnected {
-                            Circle().fill(Color.green).frame(width: 7, height: 7)
-                        }
-                    }
-                    Text(machine.username + "@" + machine.host + ":" + String(machine.port))
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(Color(white: 0.4))
-                }
-
-                Spacer()
-
-                Button(action: action) {
-                    Text(isConnected ? "Disconnect" : "Connect")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(isConnected ? .red : .white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(isConnected ? Color.red.opacity(0.1) : Color.white.opacity(0.08))
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-            }
-
+            headerRow
             if isConnected, let env = RemotePCStore.shared.environment {
-                Divider().background(Color.white.opacity(0.05))
-                HStack(spacing: 20) {
-                    metricItem("OS", env.os.displayName)
-                    metricItem("CPU", String(Int(env.cpuUsage * 100)) + "%")
-                    metricItem("RAM", String(Int(env.ramUsage * 100)) + "%")
-                    metricItem("Disk", String(Int(env.diskUsage * 100)) + "%")
-                }
-                Text(env.workspacePath)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(Color(white: 0.35))
+                metricsSection(env: env)
             }
         }
         .padding(16)
@@ -818,6 +776,66 @@ struct MachineCard: View {
         )
         .onHover { isHovered = $0 }
         .animation(.easeOut(duration: 0.15), value: isHovered)
+    }
+
+    private var headerRow: some View {
+        HStack(spacing: 12) {
+            pcIcon
+            machineInfo
+            Spacer()
+            connectButton
+        }
+    }
+
+    private var pcIcon: some View {
+        Image(systemName: "pc")
+            .font(.system(size: 28))
+            .foregroundColor(isConnected ? .green : Color(white: 0.3))
+            .frame(width: 40)
+    }
+
+    private var machineInfo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(machine.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white)
+                if isConnected {
+                    Circle().fill(Color.green).frame(width: 7, height: 7)
+                }
+            }
+            Text(machine.username + "@" + machine.host + ":" + String(machine.port))
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(Color(white: 0.4))
+        }
+    }
+
+    private var connectButton: some View {
+        Button(action: action) {
+            Text(isConnected ? "Disconnect" : "Connect")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(isConnected ? .red : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isConnected ? Color.red.opacity(0.1) : Color.white.opacity(0.08))
+                .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func metricsSection(env: RemoteEnvironment) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider().background(Color.white.opacity(0.05))
+            HStack(spacing: 20) {
+                metricItem("OS", env.os.displayName)
+                metricItem("CPU", String(Int(env.cpuUsage * 100)) + "%")
+                metricItem("RAM", String(Int(env.ramUsage * 100)) + "%")
+                metricItem("Disk", String(Int(env.diskUsage * 100)) + "%")
+            }
+            Text(env.workspacePath)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(Color(white: 0.35))
+        }
     }
 
     private func metricItem(_ label: String, _ value: String) -> some View {
