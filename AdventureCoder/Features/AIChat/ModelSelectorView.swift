@@ -284,20 +284,12 @@ public struct ModelPickerButton: View {
             .cornerRadius(6)
         }
         .buttonStyle(PressableButtonStyle())
-        .smoothModal(isPresented: $showSelector) {
-            VStack {
-                if showSelector {
-                    ModelSelectorView(isPresented: $showSelector)
-                        .frame(maxWidth: 420, maxHeight: 520)
-                        .background(Color.black.opacity(0.98))
-                        .cornerRadius(14)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                        .padding(40)
-                }
-            }
+        .sheet(isPresented: $showSelector) {
+            ModelSelectorView(isPresented: $showSelector)
+                .frame(maxWidth: 420, maxHeight: 520)
+                .background(Color.black.opacity(0.98))
+                .cornerRadius(14)
+                .presentationDetents([.large])
         }
     }
 }

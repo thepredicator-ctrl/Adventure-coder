@@ -85,7 +85,7 @@ public struct AIChatView: View {
     }
 }
 
-struct ModelPickerButton: View {
+struct LegacyModelPickerButton: View {
     @StateObject private var modelStore = CachedModelStore.shared
     @State private var showPicker = false
 

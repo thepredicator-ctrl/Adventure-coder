@@ -187,7 +187,7 @@ public final class AIChatService: ObservableObject {
                 return AIChatError.providerError("Request failed (\(code)): \(body)")
             case .modelNotFound(let modelId):
                 return AIChatError.modelNotFound(modelId)
-            case .connectionTimeout:
+            case .streamError, .requestFailed:
                 return AIChatError.timeout
             default:
                 return AIChatError.providerError(error.localizedDescription)
