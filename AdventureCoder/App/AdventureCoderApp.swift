@@ -54,14 +54,17 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 }
 
-/// Root view: shows the adaptive layout plus global overlays.
+/// Root view: shows sign-in first, then the main workspace.
 struct RootView: View {
     @StateObject private var workspace = WorkspaceState.shared
     @StateObject private var modelStore = CachedModelStore.shared
+    @StateObject private var auth = AuthManager.shared
 
     var body: some View {
         ZStack {
-            if ProjectStore.shared.projects.isEmpty && workspace.currentProject == nil {
+            if !auth.isSignedIn {
+                SignInView()
+            } else if ProjectStore.shared.projects.isEmpty && workspace.currentProject == nil {
                 OnboardingView()
             } else {
                 AdaptiveLayout()
@@ -73,7 +76,7 @@ struct RootView: View {
                 GlobalSearchView()
             }
         }
-        .background(MonoColor.canvas.ignoresSafeArea())
+        .background(Color.black.ignoresSafeArea())
         .task {
             await modelStore.refresh()
             if workspace.currentProject == nil, let first = ProjectStore.shared.projects.first {

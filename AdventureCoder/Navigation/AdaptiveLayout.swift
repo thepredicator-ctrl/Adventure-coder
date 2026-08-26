@@ -116,7 +116,7 @@ public struct RedesignediPhoneLayout: View {
         case .preview:
             PreviewView()
         case .settings:
-            SettingsView()
+            CompleteSettingsView()
         }
     }
 }
