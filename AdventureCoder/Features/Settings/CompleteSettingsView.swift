@@ -161,7 +161,7 @@ public struct CompleteSettingsView: View {
                 AgentSettingsView()
             } label: {
                 HStack {
-                    Label("Agents (\(AgentRegistry.shared.count))", systemImage: "person.3")
+                    Label("Agents", systemImage: "person.3")
                     Spacer()
                     Text("\(settings.enabledAgents.count} enabled")
                         .font(.system(size: 12))
