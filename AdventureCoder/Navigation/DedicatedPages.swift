@@ -366,25 +366,6 @@ public struct AIChatPage: View {
     }
 }
 
-                                Spacer()
-                                if settings.primaryModelId == model.modelId {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.green)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            .navigationTitle("Select Model")
-            .navigationBarTitleDisplayMode(.inline)
-            .scrollContentBackground(.hidden)
-            .background(Color.black.opacity(0.95))
-        }
-    }
-}
-
 // MARK: - Projects Page
 
 public struct ProjectsPage: View {
