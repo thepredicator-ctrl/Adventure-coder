@@ -66,7 +66,8 @@ public final class CachedModelStore: ObservableObject {
             let models = await provider.discoverModels()
             discovered.append(contentsOf: models)
         }
-        if discovered.isEmpty {
+        // Only use fallback if NO providers are configured at all
+        if discovered.isEmpty && ProviderRegistry.shared.configuredProviders().isEmpty {
             discovered = FallbackModels.list
         }
         models = discovered

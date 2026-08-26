@@ -209,11 +209,11 @@ struct StatusIndicator: View {
 // MARK: - AI Chat Page
 
 /// Full-page AI chat experience.
+/// Full-page AI chat experience with proper model switching and streaming.
 public struct AIChatPage: View {
     @StateObject private var workspace = WorkspaceState.shared
-    @StateObject private var modelStore = CachedModelStore.shared
+    @StateObject private var chatService = AIChatService.shared
     @State private var draft = ""
-    @State private var showModelPicker = false
 
     public init() {}
 
@@ -224,41 +224,19 @@ public struct AIChatPage: View {
                 Text("AI Assistant")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-
-                Button(action: { showModelPicker = true }) {
-                    HStack(spacing: 4) {
-                        Text(currentModelName)
-                            .font(.system(size: 12))
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8))
-                    }
-                    .foregroundColor(Color(white: 0.5))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-
+                ModelPickerButton()
                 Spacer()
-
                 if let project = workspace.currentProject {
                     HStack(spacing: 4) {
-                        Image(systemName: "folder")
-                            .font(.system(size: 10))
-                        Text(project.name)
-                            .font(.system(size: 11))
+                        Image(systemName: "folder").font(.system(size: 10))
+                        Text(project.name).font(.system(size: 11))
                     }
                     .foregroundColor(Color(white: 0.4))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.03))
-                    .cornerRadius(5)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Color.white.opacity(0.03)).cornerRadius(5)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-
+            .padding(.horizontal, 20).padding(.vertical, 14)
             Divider().background(Color.white.opacity(0.06))
 
             // Messages
@@ -267,34 +245,42 @@ public struct AIChatPage: View {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         if let conv = workspace.currentConversation {
                             ForEach(conv.messages) { msg in
-                                ChatMessageView(message: msg)
-                                    .id(msg.id)
+                                ChatMessageView(message: msg).id(msg.id)
                                     .transition(.asymmetric(
-                                        insertion: .opacity.combined(with: .scale(scale: 0.95)).animation(.spring(response: 0.4, dampingFraction: 0.8)),
-                                        removal: .opacity
-                                    ))
+                                        insertion: .opacity.combined(with: .scale(scale: 0.95)).animation(AppAnimation.smooth),
+                                        removal: .opacity))
                             }
                         } else {
                             VStack(spacing: 16) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(Color(white: 0.2))
-                                Text("Start a conversation")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color(white: 0.3))
-                                Text("Ask me to build, fix, or explain anything.")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color(white: 0.2))
+                                Image(systemName: "sparkles").font(.system(size: 36)).foregroundColor(Color(white: 0.15))
+                                Text("Start a conversation").font(.system(size: 16)).foregroundColor(Color(white: 0.3))
+                                Text("Ask me to build, fix, or explain anything.").font(.system(size: 13)).foregroundColor(Color(white: 0.2))
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 80)
+                            .frame(maxWidth: .infinity).padding(.top, 80)
+                        }
+                        if chatService.isGenerating {
+                            HStack(spacing: 8) {
+                                TypingIndicator()
+                                Text("Generating…").font(.system(size: 12)).foregroundColor(Color(white: 0.4))
+                            }
+                            .padding(.horizontal, 20)
+                            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        }
+                        if let error = chatService.error {
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
+                                Text(error).font(.system(size: 13)).foregroundColor(.red)
+                            }
+                            .padding(12).background(Color.red.opacity(0.08)).cornerRadius(8)
+                            .padding(.horizontal, 20)
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
                     .padding(20)
                 }
                 .onChange(of: workspace.currentConversation?.messages.count) { _ in
                     if let last = workspace.currentConversation?.messages.last {
-                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                        withAnimation(AppAnimation.smooth) { proxy.scrollTo(last.id, anchor: .bottom) }
                     }
                 }
             }
@@ -304,51 +290,36 @@ public struct AIChatPage: View {
                 Divider().background(Color.white.opacity(0.06))
                 HStack(spacing: 10) {
                     Button(action: {}) {
-                        Image(systemName: "paperclip")
-                            .font(.system(size: 16))
-                            .foregroundColor(Color(white: 0.35))
-                    }
-                    .buttonStyle(.plain)
-
+                        Image(systemName: "paperclip").font(.system(size: 16)).foregroundColor(Color(white: 0.35))
+                    }.buttonStyle(.plain)
                     TextField("Ask anything about your project…", text: $draft, axis: .vertical)
-                        .font(.system(size: 14))
-                        .textFieldStyle(.plain)
-                        .lineLimit(1...5)
-
-                    Button(action: send) {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(draft.isEmpty ? Color.gray.opacity(0.2) : Color.white.opacity(0.12))
-                            .clipShape(Circle())
+                        .font(.system(size: 14)).textFieldStyle(.plain).lineLimit(1...5)
+                    if chatService.isGenerating {
+                        Button(action: { chatService.stopGeneration() }) {
+                            Image(systemName: "stop.fill").font(.system(size: 12)).foregroundColor(.red)
+                                .padding(8).background(Color.red.opacity(0.15)).clipShape(Circle())
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                        .transition(.scale.combined(with: .opacity))
+                    } else {
+                        Button(action: send) {
+                            Image(systemName: "paperplane.fill").font(.system(size: 14)).foregroundColor(.white)
+                                .padding(8).background(draft.isEmpty ? Color.gray.opacity(0.2) : Color.white.opacity(0.12)).clipShape(Circle())
+                        }
+                        .buttonStyle(PressableButtonStyle()).disabled(draft.isEmpty)
+                        .scaleEffect(draft.isEmpty ? 0.9 : 1.0).animation(AppAnimation.smooth, value: draft.isEmpty)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(draft.isEmpty)
-                    .scaleEffect(draft.isEmpty ? 0.9 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: draft.isEmpty)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
+                .padding(.horizontal, 20).padding(.vertical, 14)
+                .animation(AppAnimation.standard, value: chatService.isGenerating)
             }
         }
         .background(Color.black.opacity(0.85))
-        .sheet(isPresented: $showModelPicker) {
-            ModelPickerSheet()
-                .presentationDetents([.medium])
-        }
-    }
-
-    private var currentModelName: String {
-        if let id = SettingsStore.shared.primaryModelId,
-           let model = modelStore.find(modelId: id) {
-            return model.displayName
-        }
-        return modelStore.freeModels.first?.displayName ?? "Select model"
     }
 
     private func send() {
         guard let conv = workspace.currentConversation, !draft.isEmpty else { return }
+        guard let project = workspace.currentProject else { return }
         let userMsg = ChatMessage(role: .user, content: draft)
         ProjectStore.shared.appendMessage(userMsg, to: conv)
         let request = draft
@@ -356,34 +327,45 @@ public struct AIChatPage: View {
         Task {
             var mutableConv = conv
             mutableConv.messages.append(userMsg)
-            let updated = await AgentOrchestrator.shared.streamSimpleChat(request, project: workspace.currentProject!, conversation: mutableConv) { _ in }
-            await MainActor.run {
-                workspace.currentConversation = updated
+            var messages: [ProviderMessage] = []
+            messages.append(ProviderMessage(role: "system", content: "You are Adventure Coder, a minimalist AI coding assistant."))
+            let cm = ContextManager(project: project)
+            let recent = cm.recentConversationPrefix(mutableConv.messages, maxTokens: 2000)
+            for m in recent { messages.append(ProviderMessage(role: m.role.rawValue, content: m.content)) }
+            var assistantMessage = ChatMessage(role: .assistant, content: "", streaming: true)
+            mutableConv.messages.append(assistantMessage)
+            let assistantIdx = mutableConv.messages.count - 1
+            workspace.currentConversation = mutableConv
+            do {
+                let completion = try await AIChatService.shared.streamChat(
+                    messages: messages, temperature: 0.3, maxTokens: 1500,
+                    onDelta: { delta in
+                        assistantMessage.content += delta
+                        Task { @MainActor in
+                            guard var conv = workspace.currentConversation else { return }
+                            conv.messages[assistantIdx] = assistantMessage
+                            workspace.currentConversation = conv
+                        }
+                    }
+                )
+                assistantMessage.streaming = false
+                assistantMessage.content = completion.content
+                guard var conv = workspace.currentConversation else { return }
+                conv.messages[assistantIdx] = assistantMessage
+                workspace.currentConversation = conv
+                ProjectStore.shared.update(conv)
+            } catch {
+                assistantMessage.streaming = false
+                assistantMessage.content = "Error: " + error.localizedDescription
+                guard var conv = workspace.currentConversation else { return }
+                conv.messages[assistantIdx] = assistantMessage
+                workspace.currentConversation = conv
+                ProjectStore.shared.update(conv)
             }
         }
     }
 }
 
-struct ModelPickerSheet: View {
-    @StateObject private var modelStore = CachedModelStore.shared
-    @StateObject private var settings = SettingsStore.shared
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Free Models") {
-                    ForEach(modelStore.freeModels) { model in
-                        Button(action: { settings.primaryModelId = model.modelId; dismiss() }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(model.displayName)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.white)
-                                    Text(model.displayPrice)
-                                        .font(.system(size: 10))
-                                        .foregroundColor(Color(white: 0.4))
-                                }
                                 Spacer()
                                 if settings.primaryModelId == model.modelId {
                                     Image(systemName: "checkmark")
