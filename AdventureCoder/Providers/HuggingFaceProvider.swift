@@ -203,6 +203,10 @@ private struct HFStreamChunk: Decodable {
         struct Delta: Decodable {
             let content: String?
         }
+        enum CodingKeys: String, CodingKey {
+            case delta
+            case finishReason = "finish_reason"
+        }
     }
 }
 
@@ -217,10 +221,18 @@ private struct HFChatResponse: Decodable {
             let role: String
             let content: String?
         }
+        enum CodingKeys: String, CodingKey {
+            case message
+            case finishReason = "finish_reason"
+        }
     }
     struct Usage: Decodable {
         let promptTokens: Int
         let completionTokens: Int
+        enum CodingKeys: String, CodingKey {
+            case promptTokens = "prompt_tokens"
+            case completionTokens = "completion_tokens"
+        }
     }
 }
 

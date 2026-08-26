@@ -50,6 +50,9 @@ public final class OpenRouterProvider: AIProvider {
         do {
             let (data, response) = try await session.data(for: req)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let body = String(data: data, encoding: .utf8) ?? ""
+                Logger.shared.log("OpenRouter discoverModels failed: status \(statusCode), body: \(body.prefix(200))", level: .error, category: "provider")
                 return []
             }
             let decoded = try JSONDecoder().decode(OpenRouterModelsResponse.self, from: data)
@@ -59,7 +62,7 @@ public final class OpenRouterProvider: AIProvider {
                 let completion = Double(pricing.completion) ?? 0
                 let isFree = prompt == 0 && completion == 0
                 let ctx = Int(m.contextLength ?? "8192") ?? 8192
-                let maxOut = Int(m.topProvider.maxCompletionTokens ?? "2048") ?? 2048
+                let maxOut = Int(m.topProvider?.maxCompletionTokens ?? "2048") ?? 2048
                 return AIModel(
                     providerId: id,
                     modelId: m.id,
@@ -80,6 +83,7 @@ public final class OpenRouterProvider: AIProvider {
                 )
             }
         } catch {
+            Logger.shared.log("OpenRouter discoverModels decode error: \(error)", level: .error, category: "provider")
             return []
         }
     }
@@ -188,8 +192,15 @@ private struct OpenRouterModelsResponse: Decodable {
         let contextLength: String?
         let pricing: Pricing
         let architecture: Architecture?
-        let topProvider: TopProvider
+        let topProvider: TopProvider?
         let supportedParameters: [String]?
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, description, pricing, architecture
+            case contextLength = "context_length"
+            case topProvider = "top_provider"
+            case supportedParameters = "supported_parameters"
+        }
 
         struct Pricing: Decodable {
             let prompt: String
@@ -198,9 +209,16 @@ private struct OpenRouterModelsResponse: Decodable {
         struct Architecture: Decodable {
             let modality: String?
             let inputModalities: [String]?
+            enum CodingKeys: String, CodingKey {
+                case modality
+                case inputModalities = "input_modalities"
+            }
         }
         struct TopProvider: Decodable {
             let maxCompletionTokens: String?
+            enum CodingKeys: String, CodingKey {
+                case maxCompletionTokens = "max_completion_tokens"
+            }
         }
     }
 }
@@ -212,6 +230,10 @@ private struct OpenRouterStreamChunk: Decodable {
         let finishReason: String?
         struct Delta: Decodable {
             let content: String?
+        }
+        enum CodingKeys: String, CodingKey {
+            case delta
+            case finishReason = "finish_reason"
         }
     }
 }
@@ -227,10 +249,18 @@ private struct OpenRouterChatResponse: Decodable {
             let role: String
             let content: String?
         }
+        enum CodingKeys: String, CodingKey {
+            case message
+            case finishReason = "finish_reason"
+        }
     }
     struct Usage: Decodable {
         let promptTokens: Int
         let completionTokens: Int
+        enum CodingKeys: String, CodingKey {
+            case promptTokens = "prompt_tokens"
+            case completionTokens = "completion_tokens"
+        }
     }
 }
 
