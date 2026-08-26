@@ -494,7 +494,7 @@ struct FileTreeSection: View {
             fileRowContent(node, depth: depth)
             if node.isDirectory && expanded.contains(node.relativePath) {
                 ForEach(node.children, id: \.relativePath) { child in
-                    fileRow(child, depth: depth + 1)
+                    AnyView(fileRow(child, depth: depth + 1))
                 }
             }
         }
