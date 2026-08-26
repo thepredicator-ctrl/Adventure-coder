@@ -95,7 +95,7 @@ struct OnboardingView: View {
                     .foregroundColor(MonoColor.primaryText)
                 Text("Adventure Coder")
                     .font(MonoType.largeTitle)
-                Text("A minimalist AI coding workspace for iPhone and iPad, powered by 70+ specialized agents.")
+                Text("A minimalist AI coding workspace for iPhone and iPad, powered by 155+ specialized agents.")
                     .font(MonoType.body)
                     .foregroundColor(MonoColor.secondaryText)
                     .multilineTextAlignment(.center)
